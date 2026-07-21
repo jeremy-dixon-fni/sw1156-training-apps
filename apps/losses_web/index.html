@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Interactive training app for initial and constant hydrologic loss calculations.">
+  <title>Hydrologic Losses Explorer</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <h1>Hydrologic Losses Explorer</h1>
+      <p>
+        Learning objective: see how initial loss, constant loss rate, and impervious cover control
+        the timing and volume of runoff from a fixed 24-hour, 10-inch storm.
+      </p>
+    </header>
+
+    <div class="app-grid">
+      <aside class="card input-panel" aria-labelledby="inputs-heading">
+        <h2 id="inputs-heading">Inputs</h2>
+
+        <div class="control-group">
+          <div class="control-heading">
+            <label for="initial-loss-slider">Initial loss</label>
+            <output id="initial-loss-value" class="control-value" for="initial-loss-slider">1.0 in</output>
+          </div>
+          <input id="initial-loss-slider" type="range" min="0" max="6" step="0.1" value="1.0">
+          <div class="range-scale" aria-hidden="true">
+            <span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6 in</span>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-heading">
+            <label for="constant-loss-slider">Constant loss rate</label>
+            <output id="constant-loss-value" class="control-value" for="constant-loss-slider">0.20 in/hr</output>
+          </div>
+          <input id="constant-loss-slider" type="range" min="0" max="1" step="0.05" value="0.20">
+          <div class="range-scale" aria-hidden="true">
+            <span>0</span><span>0.25</span><span>0.50</span><span>0.75</span><span>1.00 in/hr</span>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <div class="control-heading">
+            <label for="impervious-slider">Impervious area</label>
+            <output id="impervious-value" class="control-value" for="impervious-slider">30%</output>
+          </div>
+          <input id="impervious-slider" type="range" min="0" max="100" step="5" value="30">
+          <div class="range-scale" aria-hidden="true">
+            <span>0</span><span>25</span><span>50</span><span>75</span><span>100%</span>
+          </div>
+        </div>
+
+        <h3>Rules represented</h3>
+        <ul class="rules-list">
+          <li>The storm is fixed at 10.0 inches over 24 hours.</li>
+          <li>Impervious rainfall bypasses losses and becomes direct runoff.</li>
+          <li>Initial loss is a basin-average depth applied only against the pervious rainfall volume.</li>
+          <li>After initial loss is satisfied, constant loss is applied to the remaining pervious rainfall.</li>
+          <li>Any pervious rainfall left after those losses becomes runoff.</li>
+        </ul>
+      </aside>
+
+      <section class="results-column" aria-label="Loss calculation results">
+        <div class="primary-grid">
+          <article class="card plot-card">
+            <div id="cumulative-plot" class="plot cumulative-plot" aria-label="Cumulative rainfall, runoff, loss, and target chart"></div>
+          </article>
+
+          <article class="card goal-card">
+            <h2>Runoff Target Tracker</h2>
+            <p class="goal-note">
+              Checkpoint miss is measured in hours. Final-runoff miss is measured in percentage points.
+              Green miss values are within ±0.25 hr or ±0.5 percentage point.
+            </p>
+            <div class="table-wrap">
+              <table class="goal-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Target</th>
+                    <th scope="col">Target Time</th>
+                    <th scope="col">Current Time</th>
+                    <th scope="col">Miss</th>
+                  </tr>
+                </thead>
+                <tbody id="goal-table-body"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+
+        <article class="card incremental-card">
+          <div id="incremental-plot" class="plot incremental-plot" aria-label="Incremental rainfall, runoff, and loss chart"></div>
+        </article>
+
+        <div class="metrics-grid" aria-label="Summary metrics">
+          <article id="metric-runoff" class="card metric-card">
+            <div class="metric-title"></div>
+            <div class="metric-value"></div>
+            <div class="metric-subtitle"></div>
+          </article>
+          <article id="metric-loss" class="card metric-card">
+            <div class="metric-title"></div>
+            <div class="metric-value"></div>
+            <div class="metric-subtitle"></div>
+          </article>
+          <article id="metric-impervious" class="card metric-card">
+            <div class="metric-title"></div>
+            <div class="metric-value"></div>
+            <div class="metric-subtitle"></div>
+          </article>
+        </div>
+
+        <details class="card method-details">
+          <summary>Method details</summary>
+          <div>
+            <p>For each time step, rainfall is split into impervious and pervious components.</p>
+            <p>Impervious runoff equals rainfall multiplied by percent impervious. This portion does not see either the initial loss or the constant loss rate.</p>
+            <p>Pervious rainfall first fills the remaining basin-average initial loss. Once that abstraction is satisfied, the constant loss rate is converted to a time-step capacity and subtracted from the remaining pervious rainfall.</p>
+            <p>The model enforces mass balance at every time step: rainfall equals runoff plus initial loss plus constant loss.</p>
+          </div>
+        </details>
+      </section>
+    </div>
+  </main>
+
+  <script src="vendor/plotly.min.js"></script>
+  <script src="js/model.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,346 @@
+:root {
+  --fni-blue: #015d91;
+  --fni-green: #a9c945;
+  --fni-yellow: #deb326;
+  --fni-orange: #e05126;
+  --fni-navy: #093d5e;
+  --fni-neutral-blue: #93afb4;
+  --fni-dark-gray: #4d4d4f;
+  --fni-gray: #b1b1b1;
+  --page-background: #f5f8fa;
+  --card-border: #d9e2e8;
+  --light-blue: #e9f3f8;
+  --light-green: #f7faee;
+  --shadow: 0 4px 12px rgba(9, 61, 94, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--page-background);
+  color: var(--fni-navy);
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.45;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.app-shell {
+  width: min(1500px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 24px 0 40px;
+}
+
+.app-header h1 {
+  margin: 0 0 8px;
+  color: var(--fni-blue);
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+}
+
+.app-header p {
+  max-width: 1120px;
+  margin: 0 0 20px;
+  color: var(--fni-dark-gray);
+}
+
+.app-grid {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.results-column {
+  display: grid;
+  min-width: 0;
+  gap: 20px;
+}
+
+.card {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  background: white;
+  box-shadow: var(--shadow);
+}
+
+.input-panel {
+  position: sticky;
+  top: 16px;
+}
+
+.card h2,
+.card h3,
+.card h4 {
+  color: var(--fni-blue);
+}
+
+.card h2,
+.card h3 {
+  margin-top: 0;
+}
+
+.control-group {
+  margin-bottom: 24px;
+}
+
+.control-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.control-heading label {
+  font-weight: 700;
+}
+
+.control-value {
+  flex: 0 0 auto;
+  color: var(--fni-blue);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  width: 100%;
+  margin: 8px 0 2px;
+  accent-color: var(--fni-blue);
+  cursor: pointer;
+}
+
+.range-scale {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--fni-dark-gray);
+  font-size: 0.75rem;
+}
+
+.rules-list {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  color: var(--fni-dark-gray);
+}
+
+.rules-list li + li {
+  margin-top: 7px;
+}
+
+.primary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+
+.plot-card,
+.goal-card {
+  min-height: 492px;
+}
+
+.plot {
+  width: 100%;
+}
+
+.cumulative-plot {
+  height: 460px;
+}
+
+.incremental-card {
+  padding: 12px 16px 6px;
+}
+
+.incremental-plot {
+  height: 560px;
+}
+
+.goal-card h2 {
+  margin: 0 0 6px;
+  font-size: 1.2rem;
+}
+
+.goal-note {
+  margin: 0 0 14px;
+  color: var(--fni-dark-gray);
+  font-size: 0.82rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e3eaee;
+  border-radius: 8px;
+}
+
+.goal-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.82rem;
+}
+
+.goal-table th,
+.goal-table td {
+  padding: 10px 8px;
+  border-right: 1px solid #e3eaee;
+  border-bottom: 1px solid #e3eaee;
+  text-align: left;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+
+.goal-table th:last-child,
+.goal-table td:last-child {
+  border-right: 0;
+}
+
+.goal-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.goal-table thead th {
+  background: var(--fni-blue);
+  color: white;
+  font-weight: 700;
+}
+
+.goal-table tbody tr:nth-child(even) {
+  background: #f8fbfc;
+}
+
+.goal-table tbody tr.goal-final {
+  background: var(--light-green);
+  font-weight: 700;
+}
+
+.goal-table tbody tr.goal-hit td:last-child {
+  color: #476616;
+  font-weight: 700;
+}
+
+.goal-table tbody tr.goal-miss td:last-child {
+  color: var(--fni-orange);
+  font-weight: 700;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.metric-card {
+  min-height: 112px;
+  padding: 14px 16px;
+}
+
+.metric-title {
+  margin-bottom: 8px;
+  color: var(--fni-dark-gray);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.metric-value {
+  margin-bottom: 6px;
+  color: var(--fni-blue);
+  font-size: 1.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-subtitle {
+  color: var(--fni-dark-gray);
+  font-size: 0.88rem;
+}
+
+.method-details summary {
+  color: var(--fni-blue);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.method-details div {
+  margin-top: 12px;
+  color: var(--fni-dark-gray);
+}
+
+.method-details p:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 1180px) {
+  .app-grid {
+    grid-template-columns: 320px minmax(0, 1fr);
+  }
+
+  .primary-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .plot-card,
+  .goal-card {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 860px) {
+  .app-shell {
+    width: min(100% - 28px, 1500px);
+    padding-top: 16px;
+  }
+
+  .app-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .input-panel {
+    position: static;
+  }
+
+  .metrics-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cumulative-plot {
+    height: 430px;
+  }
+
+  .incremental-plot {
+    height: 500px;
+  }
+}
+
+@media (max-width: 540px) {
+  .card {
+    padding: 13px;
+    border-radius: 12px;
+  }
+
+  .goal-table {
+    min-width: 470px;
+  }
+
+  .cumulative-plot {
+    height: 400px;
+  }
+
+  .incremental-plot {
+    height: 440px;
+  }
+}

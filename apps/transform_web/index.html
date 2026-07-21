@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="description" content="Interactive training app for flow-path, time-of-concentration, lag-ratio, and peak-rate-factor sensitivity.">
+  <title>Transform Flow Path Explorer</title>
+  <link rel="stylesheet" href="css/app.css?v=1.2.0">
+</head>
+<body>
+  <main class="app-shell">
+    <div class="page-wrap">
+      <header class="page-header">
+        <div>
+          <p class="eyebrow">Stormwater Training Tools</p>
+          <h1>Transform Flow Path Explorer</h1>
+          <p class="lede">Compare four candidate watershed flow paths, or hold one Path 1 setup fixed and explore lag-ratio and peak-rate-factor sensitivity. The app connects each assumption to travel time, hydrograph timing, and peak flow.</p>
+        </div>
+      </header>
+
+      <nav class="method-tabs" aria-label="Calculation method">
+        <button class="method-tab is-active" type="button" data-method="tr55" aria-selected="true">TR-55 Velocity Method</button>
+        <button class="method-tab" type="button" data-method="kerby" aria-selected="false">Kerby-Kirpich Method</button>
+        <button class="method-tab" type="button" data-method="transform" aria-selected="false">Lag Ratio &amp; Peak Rate Factor</button>
+      </nav>
+
+      <section class="main-grid">
+        <aside class="card controls-card" aria-label="Inputs and assumptions">
+          <section id="tr55-controls" class="control-panel">
+            <h2>TR-55 Setup</h2>
+
+            <fieldset class="control-group">
+              <legend>Sheet Flow Length (Max)</legend>
+              <div class="choice-row" id="sheet-limit-group">
+                <label><input type="radio" name="sheet-limit" value="50"> <span>50</span></label>
+                <label><input type="radio" name="sheet-limit" value="100" checked> <span>100</span></label>
+                <label><input type="radio" name="sheet-limit" value="300"> <span>300</span></label>
+              </div>
+            </fieldset>
+
+            <fieldset class="control-group">
+              <legend>Shallow Concentrated Length (Max)</legend>
+              <div class="choice-row" id="shallow-limit-group">
+                <label><input type="radio" name="shallow-limit" value="1000"> <span>1,000</span></label>
+                <label><input type="radio" name="shallow-limit" value="2000" checked> <span>2,000</span></label>
+                <label><input type="radio" name="shallow-limit" value="3000"> <span>3,000</span></label>
+              </div>
+            </fieldset>
+
+            <div class="control-group">
+              <h3>Surface assumptions by path</h3>
+              <div id="tr55-surface-grid" class="surface-grid"></div>
+            </div>
+
+            <div class="control-group">
+              <div class="label-line">
+                <label for="channel-velocity">Common Channel Velocity (ft/s)</label>
+                <output id="channel-velocity-value" for="channel-velocity">6.0</output>
+              </div>
+              <input id="channel-velocity" type="range" min="2" max="10" step="0.5" value="6">
+              <div class="range-scale"><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span></div>
+              <p class="small-note">The selected velocity applies to the remaining channelized length of every path.</p>
+            </div>
+          </section>
+
+          <section id="kerby-controls" class="control-panel is-hidden">
+            <h2>Kerby-Kirpich Setup</h2>
+
+            <fieldset class="control-group">
+              <legend>Kerby Overland Length (Max)</legend>
+              <div class="choice-row" id="kerby-limit-group">
+                <label><input type="radio" name="kerby-limit" value="500"> <span>500</span></label>
+                <label><input type="radio" name="kerby-limit" value="1000"> <span>1,000</span></label>
+                <label><input type="radio" name="kerby-limit" value="1200" checked> <span>1,200</span></label>
+              </div>
+            </fieldset>
+
+            <div class="control-group">
+              <h3>Kerby surface assumptions by path</h3>
+              <div id="kerby-surface-grid" class="kerby-surface-grid"></div>
+              <p class="small-note">The remaining path length is assigned to the Kirpich component. Kerby retardance is selected independently for each path.</p>
+            </div>
+          </section>
+
+          <section id="transform-controls" class="control-panel is-hidden">
+            <h2>Transform Assumption Setup</h2>
+
+            <div class="control-group">
+              <div class="label-line">
+                <label for="lag-ratio">Lag Ratio (Lag / Tc)</label>
+                <output id="lag-ratio-value" for="lag-ratio">0.60</output>
+              </div>
+              <input id="lag-ratio" type="range" min="0.50" max="0.70" step="0.01" value="0.60">
+              <div class="range-scale"><span>0.50</span><span>0.55</span><span>0.60</span><span>0.65</span><span>0.70</span></div>
+            </div>
+
+            <div class="control-group">
+              <label for="peak-rate-factor">Peak Rate Factor</label>
+              <select id="peak-rate-factor"></select>
+              <p class="small-note">The blue line is the selected combination. The green band is the full solution set for lag ratios 0.50-0.70 and all listed peak rate factors.</p>
+            </div>
+
+            <div class="fixed-setup-box">
+              <strong>Fixed flow-path setup</strong>
+              <p>Path 1; 100-ft sheet-flow maximum; 1,000-ft shallow-concentrated maximum; smooth sheet surface; paved shallow flow; 6-ft/s channel velocity.</p>
+            </div>
+          </section>
+
+          <hr class="soft-rule">
+          <section class="fixed-assumptions">
+            <h2>Fixed assumptions</h2>
+            <ul>
+              <li>Drainage area: 21.4656 square miles</li>
+              <li>Excess precipitation: <span id="total-excess">7.094</span> in at 5-minute intervals</li>
+              <li>TR-55 and Kerby tabs use NRCS lag = 0.60 x Tc</li>
+              <li>TR-55 and Kerby tabs use peak rate factor = 484</li>
+              <li>The transform tab makes lag ratio and peak rate factor selectable</li>
+              <li>Surface assumptions are selectable by path</li>
+              <li>TR-55 channel velocity is common to all paths</li>
+              <li>Common downstream channel segment removed: 43,153.668 ft</li>
+            </ul>
+          </section>
+        </aside>
+
+        <section class="results-column" aria-live="polite">
+          <div id="status-panel" class="card status-panel"></div>
+
+          <div class="metric-grid">
+            <article id="metric-control" class="card metric-card"></article>
+            <article id="metric-tc" class="card metric-card"></article>
+            <article id="metric-peak" class="card metric-card"></article>
+          </div>
+
+          <section class="card">
+            <h2>Travel-Time and Peak Summary</h2>
+            <div class="table-wrap">
+              <table id="main-table" class="data-table"></table>
+            </div>
+          </section>
+
+          <section class="card chart-card">
+            <div id="hydrograph-plot" class="plot" role="img" aria-label="Modeled runoff hydrograph chart"></div>
+          </section>
+
+          <details class="card detail-card">
+            <summary>Show segment lengths and coefficients</summary>
+            <div class="table-wrap detail-table-wrap">
+              <table id="length-table" class="data-table detail-table"></table>
+            </div>
+          </details>
+        </section>
+      </section>
+
+      <section class="card map-card">
+        <h2>Candidate Flow Paths</h2>
+        <img src="assets/flow_paths_map.png" class="flow-map" alt="Map showing candidate flow paths 1 through 4">
+        <p class="small-note">The map provides the original spatial context. Calculations exclude the common lower 43,153.667588-ft downstream channel segment.</p>
+      </section>
+
+      <details class="card method-notes">
+        <summary>Method notes</summary>
+        <div class="notes-body">
+          <p>The same excess-precipitation time series and drainage area are used for every path. Only the travel-time assumption changes. This isolates transform sensitivity.</p>
+          <p>The common lower 43,153.667588-ft channel segment is excluded from every candidate path so the comparison focuses on the divergent upstream portions.</p>
+          <p>The 300-ft TR-55 sheet-flow setting is retained as a sensitivity case and is flagged in the interface.</p>
+          <p>Sheet-flow roughness, shallow-concentrated surface type, channel velocity, Kerby retardance, lag ratio, and peak rate factor are explicit teaching controls. Geometry and precipitation remain fixed.</p>
+          <p>The transform-sensitivity tab uses the NRCS gamma dimensionless unit-hydrograph family so the selected peak rate factor changes both hydrograph shape and peak while runoff volume remains fixed.</p>
+        </div>
+      </details>
+    </div>
+  </main>
+
+  <script src="vendor/plotly.min.js?v=1.2.0"></script>
+  <script src="js/model.js?v=1.2.0"></script>
+  <script src="js/charts.js?v=1.2.0"></script>
+  <script src="js/app.js?v=1.2.0"></script>
+</body>
+</html>

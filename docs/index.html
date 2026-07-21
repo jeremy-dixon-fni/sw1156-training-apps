@@ -1,123 +1,172 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Modified Puls Routing — Teaching Companion</title>
-  <link rel="stylesheet" href="css/styles.css?v=2d2c347a" />
-  <script src="vendor/plotly.min.js?v=2d2c347a"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stormwater Training Apps</title>
+  <style>
+    :root {
+      --fni-blue: #015D91;
+      --fni-green: #A9C945;
+      --fni-navy: #093D5E;
+      --neutral-blue: #93AFB4;
+      --dark-gray: #4D4D4F;
+      --bg: #f5f8fa;
+      --card: #ffffff;
+      --border: #d9e2e8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      color: var(--fni-navy);
+      background: var(--bg);
+    }
+
+    header {
+      background: var(--fni-blue);
+      color: white;
+      padding: 34px 24px;
+    }
+
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(30px, 4vw, 46px);
+      line-height: 1.1;
+    }
+
+    .intro {
+      max-width: 850px;
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.45;
+    }
+
+    main {
+      padding: 26px 24px 42px;
+    }
+
+    .sequence {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      display: block;
+      min-height: 220px;
+      padding: 22px;
+      color: inherit;
+      text-decoration: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(9, 61, 94, 0.08);
+      transition: transform 120ms ease, box-shadow 120ms ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px rgba(9, 61, 94, 0.13);
+    }
+
+    .eyebrow {
+      color: var(--dark-gray);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      margin: 12px 0 10px;
+      color: var(--fni-blue);
+      font-size: 23px;
+      line-height: 1.2;
+    }
+
+    p {
+      line-height: 1.45;
+    }
+
+    .note {
+      margin-top: 22px;
+      color: var(--dark-gray);
+      font-size: 14px;
+    }
+
+    @media (max-width: 1000px) {
+      .sequence {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 620px) {
+      .sequence {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
-  <header class="appbar">
-    <h1>Modified Puls Routing <span>Teaching Companion</span></h1>
-    <nav class="tabs" id="tabs">
-      <button class="tab" data-act="1"><b>1</b> Concept</button>
-      <button class="tab" data-act="2"><b>2</b> Mechanics</button>
-      <button class="tab" data-act="3"><b>3</b> Result</button>
-    </nav>
+  <header>
+    <div class="wrap">
+      <h1>Stormwater Training Apps</h1>
+      <p class="intro">
+        A browser-based training sequence for moving from design rainfall to losses,
+        runoff transform, and reservoir routing.
+      </p>
+    </div>
   </header>
 
-  <main class="layout">
-    <!-- Left input rail (persists across acts) -->
-    <aside class="rail card">
-      <h3>Example</h3>
-      <select id="preset-select" aria-label="Preset example"></select>
-      <p id="preset-blurb" class="muted small"></p>
+  <main>
+    <div class="wrap">
+      <section class="sequence" aria-label="Training sequence">
+        
+        <a class="card" href="precipitation/">
+          <div class="eyebrow">Training module</div>
+          <h2>1. Precipitation</h2>
+          <p>Build and inspect temporal rainfall distributions before converting rainfall to runoff.</p>
+        </a>
+        
 
-      <h3>Storage multiplier</h3>
-      <div class="slider-row">
-        <input type="range" id="mult-slider" min="0.1" max="3" step="0.05" value="1" />
-        <output id="mult-out">1.00</output>
-      </div>
-      <p class="muted small">Scales storage only. Higher = more storage held back.</p>
+        <a class="card" href="losses/">
+          <div class="eyebrow">Training module</div>
+          <h2>2. Losses</h2>
+          <p>Apply initial loss, constant loss, and imperviousness to determine excess rainfall.</p>
+        </a>
+        
 
-      <h3>Use your own data</h3>
-      <label class="upload">
-        <input type="file" id="upload-hydro" accept=".csv" hidden />
-        <span>Upload hydrograph CSV</span>
-      </label>
-      <div id="hydro-name" class="muted small">Using preset hydrograph.</div>
-      <label class="upload">
-        <input type="file" id="upload-curve" accept=".csv" hidden />
-        <span>Upload storage-discharge CSV</span>
-      </label>
-      <div id="curve-name" class="muted small">Using preset storage-discharge curve.</div>
-      <button id="reset-data" class="btn-ghost small">Reset to preset data</button>
+        <a class="card" href="transform/">
+          <div class="eyebrow">Training module</div>
+          <h2>3. Transform</h2>
+          <p>Convert excess precipitation into a runoff hydrograph using flow path and lag assumptions.</p>
+        </a>
+        
 
-      <div class="rail-foot">
-        <div class="dt-readout">Δt: <b id="dt-readout">—</b></div>
-        <button id="share-btn" class="btn-primary">🔗 Share this view</button>
-        <div id="share-status" class="muted small"></div>
-        <div class="downloads small">
-          <a href="#" id="dl-hydro">⬇ hydrograph CSV</a> ·
-          <a href="#" id="dl-curve">⬇ curve CSV</a>
-        </div>
-      </div>
-    </aside>
+        <a class="card" href="modified-puls/">
+          <div class="eyebrow">Training module</div>
+          <h2>4. Modified Puls</h2>
+          <p>Route the inflow hydrograph through storage-discharge behavior.</p>
+        </a>
+        
+      </section>
 
-    <!-- Main panel: three acts -->
-    <section class="main">
-      <div id="status" class="card status"></div>
-
-      <!-- ACT 1: CONCEPT -->
-      <div class="act" id="act-1">
-        <div class="card">
-          <h2>What routing does</h2>
-          <p class="lead">A reservoir or basin holds water back and lets it out through its outlet.
-            The result is a routed <b>outflow</b> hydrograph that is <b>attenuated</b> (lower peak) and
-            <b>lagged</b> (later peak) compared to the inflow. Drag the storage multiplier and watch both change.</p>
-          <div class="plot" id="concept-plot"></div>
-          <div class="concept-metrics">
-            <div class="pill"><span class="muted">Peak attenuation</span><b id="concept-atten">—</b></div>
-            <div class="pill"><span class="muted">Peak lag</span><b id="concept-lag">—</b></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ACT 2: MECHANICS -->
-      <div class="act" id="act-2" hidden>
-        <div class="card">
-          <h2>The arithmetic HEC-HMS hides</h2>
-          <p class="lead">Each timestep solves one equation against the <b>storage-indication curve</b>.
-            Step through it: the green marker is exactly where this step's value is read off the curve.</p>
-          <div class="split">
-            <div class="tableau-wrap">
-              <table class="tableau" id="mech-table"></table>
-            </div>
-            <div class="plot mech-plot" id="mech-curve"></div>
-          </div>
-          <div class="eqn" id="mech-eqn"></div>
-          <div class="stepper">
-            <button id="step-prev" class="btn-ghost">◀ Prev</button>
-            <button id="step-next" class="btn-ghost">Next ▶</button>
-            <button id="step-play" class="btn-ghost">▶▶ Auto-play</button>
-            <span id="step-counter" class="muted"></span>
-          </div>
-          <p class="note">☞ The curve <b>is</b> the routing. HEC-HMS just runs this loop for every timestep. On long events the stepper shows representative steps (first, peak, last, and evenly-spaced points) — each row is still an exact routed timestep.</p>
-        </div>
-      </div>
-
-      <!-- ACT 3: RESULT -->
-      <div class="act" id="act-3" hidden>
-        <div class="metrics">
-          <div class="metric card" id="m-inflow"></div>
-          <div class="metric card" id="m-outflow"></div>
-          <div class="metric card" id="m-modified"></div>
-          <div class="metric card" id="m-volume"></div>
-        </div>
-        <div class="two-col">
-          <div class="card"><div class="plot" id="result-hydro"></div></div>
-          <div class="card"><div class="plot" id="result-curve"></div></div>
-        </div>
-        <div class="card">
-          <h3>Hydrograph summary</h3>
-          <table class="summary" id="result-table"></table>
-        </div>
-        <div class="card note-card" id="result-notes"></div>
-      </div>
-    </section>
+      <p class="note">
+        Published from the repository's generated <code>/docs</code> folder.
+        Edit the source apps under <code>/apps</code>, then rerun
+        <code>python scripts/build_docs.py</code>.
+      </p>
+    </div>
   </main>
-
-  <script type="module" src="js/app.js?v=2d2c347a"></script>
 </body>
 </html>

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Interactive Atlas 14 temporal distribution training app.">
+  <title>Atlas 14 Temporal Distribution Trainer</title>
+  <link rel="stylesheet" href="css/app.css">
+  <script defer src="vendor/plotly.min.js"></script>
+  <script defer src="js/model.js"></script>
+  <script defer src="js/charts.js"></script>
+  <script defer src="js/app.js"></script>
+</head>
+<body>
+  <main class="page-shell">
+    <header class="page-header">
+      <h1>Atlas 14 Temporal Distribution Trainer</h1>
+      <p>
+        Check trainee-read Atlas 14 depth values, review the Atlas 14 IDF family, and compare a selected
+        24-hour temporal distribution against Atlas 14 duration scales through 2 days.
+      </p>
+    </header>
+
+    <div class="app-grid">
+      <aside class="card input-panel" aria-label="Inputs">
+        <h2>Inputs</h2>
+
+        <label class="control-label" for="atlas-file">Upload Atlas 14 PDS depth CSV</label>
+        <div id="atlas-upload-zone" class="upload-zone" tabindex="0" role="button" aria-controls="atlas-file">
+          <span>Drag and drop or click to select</span>
+          <input id="atlas-file" type="file" accept=".csv,text/csv" hidden>
+        </div>
+        <div id="atlas-file-name" class="file-name">Using built-in sample until a CSV is uploaded.</div>
+
+        <div class="manual-inputs">
+          <label class="control-label" for="manual-5min-depth">100-year 5-minute depth read from Atlas 14 (in)</label>
+          <input id="manual-5min-depth" class="number-input" type="number" step="0.01" placeholder="Example: 1.01">
+
+          <label class="control-label" for="manual-15min-depth">100-year 15-minute depth read from Atlas 14 (in)</label>
+          <input id="manual-15min-depth" class="number-input" type="number" step="0.01" placeholder="Example: 2.00">
+
+          <label class="control-label" for="manual-1hr-depth">100-year 1-hour depth read from Atlas 14 (in)</label>
+          <input id="manual-1hr-depth" class="number-input" type="number" step="0.01" placeholder="Example: 3.63">
+
+          <label class="control-label" for="manual-2hr-depth">100-year 2-hour depth read from Atlas 14 (in)</label>
+          <input id="manual-2hr-depth" class="number-input" type="number" step="0.01" placeholder="Example: 4.71">
+
+          <label class="control-label" for="manual-3hr-depth">100-year 3-hour depth read from Atlas 14 (in)</label>
+          <input id="manual-3hr-depth" class="number-input" type="number" step="0.01" placeholder="Example: 5.42">
+
+          <label class="control-label" for="manual-6hr-depth">100-year 6-hour depth read from Atlas 14 (in)</label>
+          <input id="manual-6hr-depth" class="number-input" type="number" step="0.01" placeholder="Example: 6.68">
+
+          <label class="control-label" for="manual-12hr-depth">100-year 12-hour depth read from Atlas 14 (in)</label>
+          <input id="manual-12hr-depth" class="number-input" type="number" step="0.01" placeholder="Example: 7.93">
+
+          <label class="control-label" for="manual-24hr-depth">100-year 24-hour depth read from Atlas 14 (in)</label>
+          <input id="manual-24hr-depth" class="number-input" type="number" step="0.01" placeholder="Example: 9.27">
+        </div>
+
+        <label class="control-label" for="method-dropdown">Temporal distribution</label>
+        <select id="method-dropdown" class="select-input" aria-describedby="distribution-help"></select>
+        <p id="distribution-help" class="small-text">
+          Library distributions are read from CSV files listed in
+          <code>data/temporal_distributions/manifest.json</code>. The dropdown label is the CSV filename without
+          <code>.csv</code>.
+        </p>
+        <p class="small-text">
+          The processed storm uses the entered 100-year 24-hour depth when provided; otherwise it uses the Atlas 14
+          100-year 24-hour depth.
+        </p>
+
+        <h3>Assumptions</h3>
+        <ul class="assumption-list">
+          <li>Atlas input is a PDS precipitation depth CSV in inches.</li>
+          <li>The reference event is fixed at the 100-year ARI.</li>
+          <li>The generated storm duration is 24 hours.</li>
+          <li>The generated storm timestep is 5 minutes.</li>
+          <li>Library distributions use unitless cumulative columns: <code>fraction_time</code> and <code>fraction_cumulative_depth</code>.</li>
+          <li>Atlas durations longer than 2 days are excluded.</li>
+          <li>IDF comparison uses rolling maximum depths from the processed storm.</li>
+          <li>Durations longer than 24 hours include zero rainfall after the storm ends.</li>
+        </ul>
+      </aside>
+
+      <section class="results-column" aria-live="polite">
+        <section id="status-message" class="card status-card">
+          <h2>Loading</h2>
+          <p>Initializing the temporal distribution library.</p>
+        </section>
+
+        <section class="metric-grid" aria-label="Summary metrics">
+          <article class="metric-card" id="metric-location">
+            <div class="metric-title">Location</div>
+            <div class="metric-value">--</div>
+            <div class="metric-subtitle">Awaiting data</div>
+          </article>
+          <article class="metric-card" id="metric-total">
+            <div class="metric-title">Applied 24-hr Depth</div>
+            <div class="metric-value">--</div>
+            <div class="metric-subtitle">Awaiting data</div>
+          </article>
+          <article class="metric-card" id="metric-peak">
+            <div class="metric-title">Peak 5-min Intensity</div>
+            <div class="metric-value">--</div>
+            <div class="metric-subtitle">Awaiting data</div>
+          </article>
+          <article class="metric-card" id="metric-1hr">
+            <div class="metric-title">Processed 1-hr Max</div>
+            <div class="metric-value">--</div>
+            <div class="metric-subtitle">Awaiting data</div>
+          </article>
+        </section>
+
+        <section class="card plot-card idf-card">
+          <div id="idf-plot" class="plot idf-plot" aria-label="Atlas 14 IDF curve comparison plot"></div>
+        </section>
+
+        <section class="card plot-card">
+          <div id="hyetograph-plot" class="plot hyetograph-plot" aria-label="Generated temporal distribution hyetograph"></div>
+        </section>
+
+        <section class="card table-card">
+          <h2>Atlas 14 Depth Checks and Processed Storm Comparison</h2>
+          <div class="table-wrap">
+            <table id="verification-table">
+              <thead>
+                <tr>
+                  <th>Duration</th>
+                  <th>Entered Atlas Depth (in)</th>
+                  <th>Atlas 100-yr Depth (in)</th>
+                  <th>Manual Difference (in)</th>
+                  <th>Manual Check</th>
+                  <th>Processed Storm Max Depth (in)</th>
+                  <th>Processed - Atlas Depth (in)</th>
+                  <th>Processed Storm Intensity (in/hr)</th>
+                  <th>Atlas 100-yr Intensity (in/hr)</th>
+                  <th>Processed - Atlas Intensity (in/hr)</th>
+                </tr>
+              </thead>
+              <tbody id="verification-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <details class="card method-notes">
+          <summary>Method notes and limitations</summary>
+          <div class="details-body">
+            <p>Atlas 14 depths are parsed by duration and recurrence interval. Durations longer than 2 days are excluded. Intensities are calculated as depth divided by duration.</p>
+            <p>Library temporal distributions are fractional time and fractional cumulative depth CSVs. The app interpolates each cumulative curve to 5-minute intervals and scales it to the selected 24-hour total.</p>
+            <p>Alternating Block uses the 100-year Atlas 14 depth-duration curve through 24 hours, interpolates intermediate durations on log-log axes, and rearranges incremental depths around the selected center.</p>
+            <p>The processed-storm IDF curve is a rolling-maximum diagnostic that shows whether a temporal distribution reproduces, exceeds, or falls below Atlas 14 at each duration.</p>
+          </div>
+        </details>
+      </section>
+    </div>
+  </main>
+
+  <noscript>This application requires JavaScript.</noscript>
+</body>
+</html>

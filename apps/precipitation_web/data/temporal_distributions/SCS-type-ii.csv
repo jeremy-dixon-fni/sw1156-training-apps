@@ -1,0 +1,24 @@
+# distribution_name: SCS Type II - approximate legacy
+# source_note: Approximate legacy SCS-style 24-hour cumulative distribution. Replace with a verified agency table before production use.
+fraction_time,fraction_cumulative_depth
+0.0000,0.000
+0.0833,0.022
+0.1667,0.048
+0.2500,0.080
+0.2917,0.098
+0.3333,0.120
+0.3750,0.147
+0.4167,0.181
+0.4583,0.235
+0.4792,0.283
+0.4896,0.357
+0.5000,0.663
+0.5104,0.735
+0.5208,0.772
+0.5417,0.820
+0.5833,0.859
+0.6667,0.899
+0.7500,0.928
+0.8333,0.955
+0.9167,0.978
+1.0000,1.000

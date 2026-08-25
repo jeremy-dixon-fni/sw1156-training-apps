@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Interactive Atlas 14 temporal distribution training app.">
   <title>Atlas 14 Temporal Distribution Trainer</title>
-  <link rel="stylesheet" href="css/app.css?v=5ebb91e0">
-  <link rel="stylesheet" href="../shared/css/checkpoints.css?v=5ebb91e0">
-  <script defer src="vendor/plotly.min.js?v=5ebb91e0"></script>
-  <script defer src="js/model.js?v=5ebb91e0"></script>
-  <script defer src="js/charts.js?v=5ebb91e0"></script>
-  <script defer src="../shared/js/checkpoints.js?v=5ebb91e0"></script>
-  <script defer src="js/app.js?v=5ebb91e0"></script>
+  <link rel="stylesheet" href="css/app.css?v=19aef5e2">
+  <link rel="stylesheet" href="../shared/css/checkpoints.css?v=19aef5e2">
+  <script defer src="vendor/plotly.min.js?v=19aef5e2"></script>
+  <script defer src="js/model.js?v=19aef5e2"></script>
+  <script defer src="js/charts.js?v=19aef5e2"></script>
+  <script defer src="../shared/js/checkpoints.js?v=19aef5e2"></script>
+  <script defer src="js/app.js?v=19aef5e2"></script>
 </head>
 <body>
   <main class="page-shell">
@@ -59,32 +59,6 @@
       <aside class="card input-panel" aria-label="Inputs">
         <h2>Inputs</h2>
 
-        <div class="manual-inputs">
-          <label class="control-label" for="manual-5min-depth">100-year 5-minute depth read from Atlas 14 (in)</label>
-          <input id="manual-5min-depth" class="number-input" type="number" step="0.01" placeholder="Example: 1.01">
-
-          <label class="control-label" for="manual-15min-depth">100-year 15-minute depth read from Atlas 14 (in)</label>
-          <input id="manual-15min-depth" class="number-input" type="number" step="0.01" placeholder="Example: 2.00">
-
-          <label class="control-label" for="manual-1hr-depth">100-year 1-hour depth read from Atlas 14 (in)</label>
-          <input id="manual-1hr-depth" class="number-input" type="number" step="0.01" placeholder="Example: 3.63">
-
-          <label class="control-label" for="manual-2hr-depth">100-year 2-hour depth read from Atlas 14 (in)</label>
-          <input id="manual-2hr-depth" class="number-input" type="number" step="0.01" placeholder="Example: 4.71">
-
-          <label class="control-label" for="manual-3hr-depth">100-year 3-hour depth read from Atlas 14 (in)</label>
-          <input id="manual-3hr-depth" class="number-input" type="number" step="0.01" placeholder="Example: 5.42">
-
-          <label class="control-label" for="manual-6hr-depth">100-year 6-hour depth read from Atlas 14 (in)</label>
-          <input id="manual-6hr-depth" class="number-input" type="number" step="0.01" placeholder="Example: 6.68">
-
-          <label class="control-label" for="manual-12hr-depth">100-year 12-hour depth read from Atlas 14 (in)</label>
-          <input id="manual-12hr-depth" class="number-input" type="number" step="0.01" placeholder="Example: 7.93">
-
-          <label class="control-label" for="manual-24hr-depth">100-year 24-hour depth read from Atlas 14 (in)</label>
-          <input id="manual-24hr-depth" class="number-input" type="number" step="0.01" placeholder="Example: 9.27">
-        </div>
-
         <label class="control-label" for="method-dropdown">Temporal distribution</label>
         <select id="method-dropdown" class="select-input" aria-describedby="distribution-help"></select>
         <p id="distribution-help" class="small-text">
@@ -93,8 +67,7 @@
           <code>.csv</code>.
         </p>
         <p class="small-text">
-          The processed storm uses the entered 100-year 24-hour depth when provided; otherwise it uses the Atlas 14
-          100-year 24-hour depth.
+          The processed storm uses the Atlas 14 100-year, 24-hour depth from the active uploaded or sample table.
         </p>
 
         <h3>Assumptions</h3>
@@ -148,16 +121,14 @@
         </section>
 
         <section class="card table-card">
-          <h2>Atlas 14 Depth Checks and Processed Storm Comparison</h2>
+          <h2>Atlas 14 Depth and Processed Storm Comparison</h2>
           <div class="table-wrap">
             <table id="verification-table">
               <thead>
                 <tr>
                   <th>Duration</th>
-                  <th>Entered Atlas Depth (in)</th>
+                  <th>Checkpoint Atlas Depth (in)</th>
                   <th>Atlas 100-yr Depth (in)</th>
-                  <th>Manual Difference (in)</th>
-                  <th>Manual Check</th>
                   <th>Processed Storm Max Depth (in)</th>
                   <th>Processed - Atlas Depth (in)</th>
                   <th>Processed Storm Intensity (in/hr)</th>

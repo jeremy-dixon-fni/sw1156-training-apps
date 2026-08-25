@@ -306,22 +306,6 @@ th {
   font-weight: 700;
 }
 
-tr.check-pass td {
-  background: #f7faee;
-}
-
-tr.check-attention td {
-  background: #fff2ec;
-}
-
-tr.check-missing td {
-  background: #f8fbfc;
-}
-
-.manual-status {
-  font-weight: 700;
-}
-
 .method-notes summary {
   cursor: pointer;
   color: var(--fni-blue);
@@ -346,16 +330,6 @@ tr.check-missing td {
     max-height: none;
   }
 
-  .manual-inputs {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 16px;
-  }
-
-  .manual-inputs .control-label,
-  .manual-inputs .number-input {
-    grid-column: auto;
-  }
 }
 
 @media (max-width: 850px) {
@@ -374,7 +348,6 @@ tr.check-missing td {
 }
 
 @media (max-width: 560px) {
-  .manual-inputs,
   .metric-grid {
     grid-template-columns: 1fr;
   }

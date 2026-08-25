@@ -14,8 +14,7 @@
     STORM_DURATION_MIN: 24 * 60,
     MAX_ATLAS_DURATION_MIN: 2 * 24 * 60,
     REFERENCE_ARI_YR: 100,
-    MANUAL_DEPTH_DURATIONS_MIN: Object.freeze([5, 15, 60, 120, 180, 360, 720, 1440]),
-    DEPTH_TOL_IN: 0.01,
+    REQUIRED_ATLAS_DURATIONS_MIN: Object.freeze([5, 15, 60, 120, 180, 360, 720, 1440]),
     ATLAS_LINE_COLORS: Object.freeze([
       "#00b050",
       "#ff9900",
@@ -578,7 +577,7 @@ fraction_time,fraction_cumulative_depth
     const atlas = { metadata, depthTable, returnPeriods, durationLabels, sourceQuantity, seriesType };
     validateMonotonicAtlas(atlas);
 
-    CONSTANTS.MANUAL_DEPTH_DURATIONS_MIN.forEach((durationMin) => {
+    CONSTANTS.REQUIRED_ATLAS_DURATIONS_MIN.forEach((durationMin) => {
       getDepth(atlas, CONSTANTS.REFERENCE_ARI_YR, durationMin);
     });
 
@@ -820,7 +819,7 @@ fraction_time,fraction_cumulative_depth
     });
   }
 
-  function makeDepthCheckTable(atlas, generatedIdf, manualDepths) {
+  function makeDepthCheckTable(atlas, generatedIdf, checkpointDepths) {
     const atlas100 = atlas.depthTable
       .filter((row) => almostEqual(row.ariYr, CONSTANTS.REFERENCE_ARI_YR) && row.durationMin <= CONSTANTS.MAX_ATLAS_DURATION_MIN + 1e-9)
       .sort((a, b) => a.durationMin - b.durationMin);
@@ -828,15 +827,7 @@ fraction_time,fraction_cumulative_depth
 
     return atlas100.map((atlasRow) => {
       const durationMin = atlasRow.durationMin;
-      const entered = safeNumber(manualDepths[durationMin], null);
-      const required = CONSTANTS.MANUAL_DEPTH_DURATIONS_MIN.some((duration) => almostEqual(duration, durationMin));
-      const manualDifference = entered === null ? null : entered - atlasRow.depthIn;
-      let manualCheck = "Not requested";
-      if (entered === null && required) {
-        manualCheck = "Missing";
-      } else if (entered !== null) {
-        manualCheck = Math.abs(manualDifference) <= CONSTANTS.DEPTH_TOL_IN ? "Pass" : "Check";
-      }
+      const entered = safeNumber(checkpointDepths[durationMin], null);
 
       const processed = generatedByDuration.get(durationMin);
       const processedDepth = processed ? processed.generatedMaxDepthIn : null;
@@ -846,8 +837,6 @@ fraction_time,fraction_cumulative_depth
         duration: formatDuration(durationMin),
         enteredAtlasDepthIn: entered === null ? null : roundNumber(entered, 3),
         atlas100DepthIn: roundNumber(atlasRow.depthIn, 3),
-        manualDifferenceIn: manualDifference === null ? null : roundNumber(manualDifference, 3),
-        manualCheck,
         processedStormMaxDepthIn: processedDepth === null ? null : roundNumber(processedDepth, 3),
         processedMinusAtlasDepthIn: processedDepth === null ? null : roundNumber(processedDepth - atlasRow.depthIn, 3),
         processedStormIntensityInHr: processedIntensity === null ? null : roundNumber(processedIntensity, 3),

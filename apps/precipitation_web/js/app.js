@@ -11,7 +11,8 @@
     usingSample: true,
     distributionLibrary: {},
     libraryWarnings: [],
-    checkpointFlow: null
+    checkpointFlow: null,
+    checkpointDepths: {}
   };
 
   const LOOKUP_CHALLENGES = Object.freeze([
@@ -37,23 +38,10 @@
 
   const assignment = assignedExercise();
 
-  const manualInputIds = Object.freeze({
-    5: "manual-5min-depth",
-    15: "manual-15min-depth",
-    60: "manual-1hr-depth",
-    120: "manual-2hr-depth",
-    180: "manual-3hr-depth",
-    360: "manual-6hr-depth",
-    720: "manual-12hr-depth",
-    1440: "manual-24hr-depth"
-  });
-
   const tableColumns = Object.freeze([
     ["duration", null],
     ["enteredAtlasDepthIn", 3],
     ["atlas100DepthIn", 3],
-    ["manualDifferenceIn", 3],
-    ["manualCheck", null],
     ["processedStormMaxDepthIn", 3],
     ["processedMinusAtlasDepthIn", 3],
     ["processedStormIntensityInHr", 3],
@@ -134,32 +122,13 @@
 
     rows.forEach((row) => {
       const tr = document.createElement("tr");
-      if (row.manualCheck === "Pass") {
-        tr.className = "check-pass";
-      } else if (row.manualCheck === "Check") {
-        tr.className = "check-attention";
-      } else if (row.manualCheck === "Missing") {
-        tr.className = "check-missing";
-      }
-
       tableColumns.forEach(([key, digits]) => {
         const td = document.createElement("td");
         td.textContent = formatTableValue(row[key], digits);
-        if (key === "manualCheck") {
-          td.className = "manual-status";
-        }
         tr.appendChild(td);
       });
       body.appendChild(tr);
     });
-  }
-
-  function manualDepthValues() {
-    const values = {};
-    Object.entries(manualInputIds).forEach(([durationMin, id]) => {
-      values[Number(durationMin)] = element(id).value;
-    });
-    return values;
   }
 
   function populateMethodDropdown() {
@@ -260,7 +229,9 @@
           const depth = Model.getDepth(source.atlas, lookup.ariYr, lookup.durationMin);
           const target = lookup.quantity === "depth" ? depth : Model.intensityFromDepth(depth, lookup.durationMin);
           const result = compareAnswer(element("checkpoint-answer").value, target, lookupUnit, { target, quantity: lookup.quantity });
-          if (result.status === Checkpoints.RESULT.ACCEPTABLE) result.message = "Correct. You selected the proper duration and recurrence interval and interpreted the requested quantity.";
+          if (result.status === Checkpoints.RESULT.ACCEPTABLE) {
+            result.message = "Correct. You selected the proper duration and recurrence interval and interpreted the requested quantity.";
+          }
           return result;
         },
         takeaway: "A valid lookup depends on duration, recurrence interval, quantity, and units—not just finding a nearby number."
@@ -294,7 +265,7 @@
           const target = Model.getDepth(source.atlas, 100, 1440);
           const result = compareAnswer(element("checkpoint-answer").value, target, "in", { depthIn: target });
           if (result.status === Checkpoints.RESULT.ACCEPTABLE) {
-            element("manual-24hr-depth").value = target.toFixed(2);
+            state.checkpointDepths[1440] = target;
             result.message = "Correct. This total depth defines the 100-year, 24-hour design criterion, but it does not define how rainfall is arranged through time.";
           }
           return result;
@@ -336,8 +307,7 @@
           }
           if (checks.every(item => item.evaluation.status === Checkpoints.RESULT.ACCEPTABLE)) {
             durations.forEach(duration => {
-              const manualId = manualInputIds[duration];
-              if (manualId) element(manualId).value = Model.getDepth(source.atlas, 100, duration).toFixed(2);
+              state.checkpointDepths[duration] = Model.getDepth(source.atlas, 100, duration);
             });
             element("method-dropdown").value = "abm_50";
             updateOutputs();
@@ -371,9 +341,9 @@
         state.atlasText = Model.SAMPLE_ATLAS14_CSV;
         state.atlasFilename = null;
         state.usingSample = true;
+        state.checkpointDepths = {};
         element("atlas-file").value = "";
         element("atlas-file-name").textContent = "Upload your Atlas 14 export to begin. The built-in sample remains available only for the unlocked sandbox.";
-        Object.values(manualInputIds).forEach(id => { element(id).value = ""; });
         updateOutputs();
       }
     });
@@ -419,9 +389,8 @@
         Model.CONSTANTS.STORM_DURATION_MIN
       );
 
-      const manualDepths = manualDepthValues();
-      const entered24Hour = Model.safeNumber(manualDepths[Model.CONSTANTS.STORM_DURATION_MIN], null);
-      const applied24Hour = entered24Hour === null ? atlas24HourDepth : entered24Hour;
+      const checkpointDepths = state.checkpointDepths;
+      const applied24Hour = atlas24HourDepth;
       if (!(applied24Hour > 0)) {
         throw new Error("The applied 24-hour rainfall depth must be positive.");
       }
@@ -433,11 +402,7 @@
 
       const storm = Model.generateStorm(atlas, method, applied24Hour, state.distributionLibrary);
       const generatedIdf = Model.computeGeneratedIdf(storm, atlas);
-      const verificationRows = Model.makeDepthCheckTable(atlas, generatedIdf, manualDepths);
-
-      const passCount = verificationRows.filter((row) => row.manualCheck === "Pass").length;
-      const checkCount = verificationRows.filter((row) => row.manualCheck === "Check").length;
-      const missingCount = verificationRows.filter((row) => row.manualCheck === "Missing").length;
+      const verificationRows = Model.makeDepthCheckTable(atlas, generatedIdf, checkpointDepths);
       const sourceText = state.usingSample
         ? "built-in sample Atlas 14 CSV"
         : `uploaded file: ${state.atlasFilename || "Atlas 14 CSV"}`;
@@ -448,8 +413,7 @@
           `Source: ${sourceText}.`,
           Model.metadataLocationText(atlas),
           `Temporal distribution: ${storm.method}.`,
-          `Manual depth checks: ${passCount} pass, ${checkCount} check, ${missingCount} missing. ` +
-            "The distribution is scaled to the entered 24-hour depth when present. Atlas durations longer than 2 days are excluded."
+          "The distribution is scaled to the Atlas 14 100-year, 24-hour depth. Atlas durations longer than 2 days are excluded."
         ],
         { warnings: state.libraryWarnings }
       );
@@ -498,10 +462,6 @@
   async function initialize() {
     bindUploadControl();
 
-    const updateDebounced = debounce(updateOutputs, 120);
-    Object.values(manualInputIds).forEach((id) => {
-      element(id).addEventListener("input", updateDebounced);
-    });
     element("method-dropdown").addEventListener("change", updateOutputs);
 
     const libraryResult = await Model.loadDistributionLibrary(

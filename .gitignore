@@ -51,4 +51,8 @@ instance/
 # Preset source data is committed despite the global *.csv ignore above
 !apps/modified_puls_web/data/
 !apps/modified_puls_web/data/*.csv
+
+# Published precipitation distribution library is required by the static app
+!apps/precipitation_web/data/temporal_distributions/*.csv
+!docs/precipitation/data/temporal_distributions/*.csv
 .gstack/

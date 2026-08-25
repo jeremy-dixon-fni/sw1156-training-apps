@@ -63,6 +63,35 @@ textarea {
   align-items: start;
 }
 
+.checkpoint-card,
+.sandbox-lock {
+  margin-bottom: 18px;
+}
+
+.checkpoint-current-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.checkpoint-current {
+  padding: 12px;
+  background: #edf5f8;
+  border-radius: 8px;
+}
+
+.checkpoint-current strong,
+.checkpoint-current span {
+  display: block;
+}
+
+.checkpoint-current span {
+  margin-top: 4px;
+  color: var(--fni-blue);
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
 .results-column {
   display: grid;
   min-width: 0;

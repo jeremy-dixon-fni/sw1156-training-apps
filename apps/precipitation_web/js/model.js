@@ -1,4 +1,11 @@
-(function (global) {
+(function (root, factory) {
+  const api = factory();
+  if (typeof module === "object" && module.exports) {
+    module.exports = api;
+  } else {
+    root.PrecipModel = api;
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
   const CONSTANTS = Object.freeze({
@@ -499,6 +506,13 @@ fraction_time,fraction_cumulative_depth
       throw new Error("Could not parse Atlas 14 ARI values from the header row.");
     }
 
+    const dataTypeText = String(metadata["Data type"] || rows[0]?.[0] || "").toLowerCase();
+    const sourceQuantity = dataTypeText.includes("intensity") || dataTypeText.includes("inches/hour")
+      ? "intensity"
+      : "depth";
+    const seriesTypeText = String(metadata["Time series type"] || "unknown").toLowerCase();
+    const seriesType = seriesTypeText.includes("annual") ? "annual maximum" :
+      seriesTypeText.includes("partial") ? "partial duration" : "unknown";
     const depthTable = [];
     const durationLabels = [];
 
@@ -539,17 +553,19 @@ fraction_time,fraction_cumulative_depth
         if (!raw) {
           return;
         }
-        const depth = Number(raw);
-        if (!Number.isFinite(depth)) {
-          throw new Error(`Could not parse depth '${raw}' for ${durationLabel}, ${ari}-year.`);
+        const suppliedValue = Number(raw);
+        if (!Number.isFinite(suppliedValue)) {
+          throw new Error(`Could not parse precipitation value '${raw}' for ${durationLabel}, ${ari}-year.`);
         }
+        const depth = sourceQuantity === "intensity" ? suppliedValue * durationMin / 60 : suppliedValue;
         depthTable.push({
           duration: durationLabel,
           durationMin,
           durationHr: durationMin / 60,
           ariYr: ari,
           depthIn: depth,
-          intensityInHr: intensityFromDepth(depth, durationMin)
+          intensityInHr: intensityFromDepth(depth, durationMin),
+          suppliedValue
         });
       });
     }
@@ -559,7 +575,7 @@ fraction_time,fraction_cumulative_depth
     }
 
     depthTable.sort((a, b) => (a.durationMin - b.durationMin) || (a.ariYr - b.ariYr));
-    const atlas = { metadata, depthTable, returnPeriods, durationLabels };
+    const atlas = { metadata, depthTable, returnPeriods, durationLabels, sourceQuantity, seriesType };
     validateMonotonicAtlas(atlas);
 
     CONSTANTS.MANUAL_DEPTH_DURATIONS_MIN.forEach((durationMin) => {
@@ -848,7 +864,7 @@ fraction_time,fraction_cumulative_depth
     return latitude && longitude ? `${location} | Lat ${latitude}, Lon ${longitude}` : location;
   }
 
-  global.PrecipModel = Object.freeze({
+  return Object.freeze({
     CONSTANTS,
     SAMPLE_ATLAS14_CSV,
     cleanCell,
@@ -874,4 +890,4 @@ fraction_time,fraction_cumulative_depth
     makeDepthCheckTable,
     metadataLocationText
   });
-})(window);
+});

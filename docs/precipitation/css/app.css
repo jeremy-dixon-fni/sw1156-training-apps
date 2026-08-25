@@ -58,6 +58,27 @@ code {
   color: var(--fni-dark-gray);
 }
 
+.checkpoint-card {
+  margin-bottom: 18px;
+}
+
+.atlas-assignment {
+  margin: 14px 0;
+  padding: 12px 14px;
+  background: #edf5f8;
+  border-radius: 8px;
+}
+
+.atlas-assignment p:last-child {
+  margin-bottom: 0;
+}
+
+.checkpoint-answer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .app-grid {
   display: grid;
   grid-template-columns: minmax(330px, 380px) minmax(0, 1fr);

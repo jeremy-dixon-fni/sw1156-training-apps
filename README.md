@@ -45,6 +45,23 @@ python scripts/build_docs.py     # copies the app into /docs (Settings → Pages
 
 See `apps/modified_puls_web/README.md` for the full file map and deploy notes.
 
+## Checkpoint training sequence
+
+The static Precipitation, Losses, and Transform apps use a shared checkpoint layer before unlocking their existing exploration controls. Progress is stored in browser session state, numerical answers use engineering-appropriate absolute/percentage tolerances, and near misses receive diagnostic guidance.
+
+Run all static source apps locally from the repository root so the shared checkpoint assets resolve:
+
+```bash
+python -m http.server 8000 -d apps
+# http://localhost:8000/precipitation_web/
+# http://localhost:8000/losses_web/
+# http://localhost:8000/transform_web/
+```
+
+The Precipitation module carries its verified 2-year, 24-hour depth forward to Transform within the same browser tab/session. Use **Reset Exercise** within each app to clear that module's checkpoint progress.
+
+For dependency-free model smoke checks, open `http://localhost:8000/browser_tests/` while the same server is running. The page tests shared tolerances, Atlas depth/intensity parsing, loss-model mass balance and sensitivities, and Transform rainfall/surface sensitivities.
+
 ## Repository goals
 
 - Keep each teaching app focused on one learning objective.
@@ -125,7 +142,7 @@ Use `np.trapezoid(...)` for trapezoidal integration. NumPy 2.x removed `np.trapz
 ## Documentation
 
 - `specs/` holds design specs for larger features (e.g. `specs/2026-06-08-modified-puls-teaching-companion-design.md`).
-- `docs/` is the published **GitHub Pages** site — it serves the static Modified Puls Teaching Companion, built from `apps/modified_puls_web/` by `python scripts/build_docs.py`. Do not hand-edit `docs/`; edit the source and re-run the build.
+- `docs/` is the generated **GitHub Pages** site for all static training modules, built from the browser apps and `apps/shared/` by `python scripts/build_docs.py`. Do not hand-edit `docs/`; edit the source and re-run the build.
 - Each app keeps its own `readme.md` with its learning objective, inputs, assumptions, and outputs.
 
 ## Status

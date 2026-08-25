@@ -8,7 +8,8 @@
   <meta http-equiv="Expires" content="0">
   <meta name="description" content="Interactive training app for flow-path, time-of-concentration, lag-ratio, and peak-rate-factor sensitivity.">
   <title>Transform Flow Path Explorer</title>
-  <link rel="stylesheet" href="css/app.css?v=1.2.0">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="../shared/css/checkpoints.css">
 </head>
 <body>
   <main class="app-shell">
@@ -21,13 +22,34 @@
         </div>
       </header>
 
-      <nav class="method-tabs" aria-label="Calculation method">
+      <section class="card checkpoint-card" aria-labelledby="checkpoint-title">
+        <div class="checkpoint-header">
+          <div>
+            <p id="checkpoint-number" class="checkpoint-number"></p>
+            <h2 id="checkpoint-title"></h2>
+          </div>
+          <button id="checkpoint-reset" class="checkpoint-button secondary" type="button">Reset Exercise</button>
+        </div>
+        <div class="checkpoint-progress-track" aria-hidden="true"><div id="checkpoint-progress" class="checkpoint-progress"></div></div>
+        <p id="checkpoint-task" class="checkpoint-task"></p>
+        <div id="checkpoint-body" class="checkpoint-body"></div>
+        <div id="checkpoint-feedback" class="checkpoint-feedback" role="status" hidden></div>
+        <div class="checkpoint-actions">
+          <button id="checkpoint-check" class="checkpoint-button" type="button">Check Answer</button>
+          <button id="checkpoint-next" class="checkpoint-button" type="button" hidden>Next Checkpoint</button>
+        </div>
+        <p id="checkpoint-complete" class="checkpoint-complete" hidden>QC lesson complete. The full flow-path and transform sensitivity explorer is now unlocked.</p>
+      </section>
+
+      <div id="sandbox-lock" class="sandbox-lock">Complete the three QC checkpoints to unlock the existing transform explorer.</div>
+
+      <nav id="sandbox-tabs" class="method-tabs is-checkpoint-locked" aria-label="Calculation method">
         <button class="method-tab is-active" type="button" data-method="tr55" aria-selected="true">TR-55 Velocity Method</button>
         <button class="method-tab" type="button" data-method="kerby" aria-selected="false">Kerby-Kirpich Method</button>
         <button class="method-tab" type="button" data-method="transform" aria-selected="false">Lag Ratio &amp; Peak Rate Factor</button>
       </nav>
 
-      <section class="main-grid">
+      <section id="sandbox-main" class="main-grid is-checkpoint-locked">
         <aside class="card controls-card" aria-label="Inputs and assumptions">
           <section id="tr55-controls" class="control-panel">
             <h2>TR-55 Setup</h2>
@@ -154,13 +176,13 @@
         </section>
       </section>
 
-      <section class="card map-card">
+      <section id="sandbox-map" class="card map-card is-checkpoint-locked">
         <h2>Candidate Flow Paths</h2>
         <img src="assets/flow_paths_map.png" class="flow-map" alt="Map showing candidate flow paths 1 through 4">
         <p class="small-note">The map provides the original spatial context. Calculations exclude the common lower 43,153.667588-ft downstream channel segment.</p>
       </section>
 
-      <details class="card method-notes">
+      <details id="sandbox-notes" class="card method-notes is-checkpoint-locked">
         <summary>Method notes</summary>
         <div class="notes-body">
           <p>The same excess-precipitation time series and drainage area are used for every path. Only the travel-time assumption changes. This isolates transform sensitivity.</p>
@@ -173,9 +195,10 @@
     </div>
   </main>
 
-  <script src="vendor/plotly.min.js?v=1.2.0"></script>
-  <script src="js/model.js?v=1.2.0"></script>
-  <script src="js/charts.js?v=1.2.0"></script>
-  <script src="js/app.js?v=1.2.0"></script>
+  <script src="vendor/plotly.min.js"></script>
+  <script src="js/model.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="../shared/js/checkpoints.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>

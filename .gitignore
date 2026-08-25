@@ -38,6 +38,15 @@ instance/
 
 # Brainstorming scratch (visual companion mockups)
 .superpowers/
+./transform_flow_path_trainer_v1
+./transform_flow_path_trainer_v3
+./transform_flow_path_trainer_v4
+./apps/alternatives_analysis
+./apps/losses
+./apps/modified_puls
+./apps/muskingum_cunge
+./apps/precipitation
+./apps/tc_lag
 
 # Preset source data is committed despite the global *.csv ignore above
 !apps/modified_puls_web/data/

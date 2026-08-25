@@ -47,6 +47,10 @@ const roughSheet = byPath(Model.calculateMethodResults({
 assert.ok(roughSheet[1].sheetTimeMin > tr55Default[1].sheetTimeMin);
 assert.ok(Math.abs(roughSheet[2].totalTimeMin - tr55Default[2].totalTimeMin) < 1e-12);
 
+const lowerP2 = byPath(Model.calculateMethodResults({ method: "tr55", p2_24hrIn: 3.0 }));
+const higherP2 = byPath(Model.calculateMethodResults({ method: "tr55", p2_24hrIn: 5.0 }));
+assert.ok(lowerP2[1].sheetTimeMin > higherP2[1].sheetTimeMin);
+
 const pavedShallow = byPath(Model.calculateMethodResults({
   method: "tr55",
   sheetLimitFt: 100,

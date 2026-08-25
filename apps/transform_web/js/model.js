@@ -174,6 +174,7 @@
     const sheetSurfaceKey = options.sheetSurfaceKey ?? DEFAULT_SHEET_SURFACE_KEYS[path.pathId];
     const shallowSurfaceKey = options.shallowSurfaceKey ?? DEFAULT_SHALLOW_SURFACE_KEYS[path.pathId];
     const channelVelocityFps = Number(options.channelVelocityFps ?? DEFAULT_CHANNEL_VELOCITY_FPS);
+    const p2_24hrIn = Number(options.p2_24hrIn ?? P2_24HR_IN);
     const sheetSurface = SHEET_FLOW_SURFACES[sheetSurfaceKey];
     const shallowSurface = SHALLOW_FLOW_SURFACES[shallowSurfaceKey];
     if (!sheetSurface) throw new Error(`Unsupported sheet-flow surface: ${sheetSurfaceKey}`);
@@ -184,7 +185,7 @@
     const shallowAvailableFt = Math.max(path.nonchannelLimitFt - sheetLengthFt, 0);
     const shallowLengthFt = Math.min(shallowLimitFt, shallowAvailableFt);
     const remainingChannelLengthFt = path.totalLengthFt - sheetLengthFt - shallowLengthFt;
-    const sheetTimeMin = calculateSheetTimeMin(sheetSurface.n, sheetLengthFt, path.nonchannelSlope);
+    const sheetTimeMin = calculateSheetTimeMin(sheetSurface.n, sheetLengthFt, path.nonchannelSlope, p2_24hrIn);
     const shallowVelocityFps = calculateShallowVelocityFps(shallowSurface.k, path.nonchannelSlope);
     const shallowTimeMin = calculateTravelTimeMin(shallowLengthFt, shallowVelocityFps);
     const channelTimeMin = calculateTravelTimeMin(remainingChannelLengthFt, channelVelocityFps);
@@ -277,7 +278,8 @@
           shallowLimitFt: options.shallowLimitFt ?? 2000,
           sheetSurfaceKey: sheetSurfaceKeys[path.pathId],
           shallowSurfaceKey: shallowSurfaceKeys[path.pathId],
-          channelVelocityFps: options.channelVelocityFps ?? DEFAULT_CHANNEL_VELOCITY_FPS
+          channelVelocityFps: options.channelVelocityFps ?? DEFAULT_CHANNEL_VELOCITY_FPS,
+          p2_24hrIn: options.p2_24hrIn ?? P2_24HR_IN
         });
       }
       if (method === "kerby") {

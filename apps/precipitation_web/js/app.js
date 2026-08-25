@@ -3,14 +3,39 @@
 
   const Model = global.PrecipModel;
   const Charts = global.PrecipCharts;
+  const Checkpoints = global.TrainingCheckpoints;
 
   const state = {
     atlasText: Model.SAMPLE_ATLAS14_CSV,
     atlasFilename: null,
     usingSample: true,
     distributionLibrary: {},
-    libraryWarnings: []
+    libraryWarnings: [],
+    checkpointFlow: null
   };
+
+  const LOOKUP_CHALLENGES = Object.freeze([
+    { ariYr: 25, durationMin: 180, quantity: "intensity" },
+    { ariYr: 10, durationMin: 30, quantity: "depth" },
+    { ariYr: 50, durationMin: 120, quantity: "intensity" }
+  ]);
+
+  function assignedExercise() {
+    const key = "training-checkpoints:precipitation:assignment:v1";
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(key) || "null");
+      if (saved && saved.lookup) return saved;
+    } catch (_error) { /* use a fresh assignment */ }
+    const assignment = {
+      requestedQuantity: Math.random() < 0.5 ? "depth" : "intensity",
+      requestedSeries: Math.random() < 0.5 ? "partial-duration" : "annual-maximum",
+      lookup: LOOKUP_CHALLENGES[Math.floor(Math.random() * LOOKUP_CHALLENGES.length)]
+    };
+    sessionStorage.setItem(key, JSON.stringify(assignment));
+    return assignment;
+  }
+
+  const assignment = assignedExercise();
 
   const manualInputIds = Object.freeze({
     5: "manual-5min-depth",
@@ -177,6 +202,183 @@
     }
   }
 
+  function uploadedAtlas() {
+    return state.usingSample ? null : Model.parseAtlas14CsvText(state.atlasText);
+  }
+
+  function numericAnswer(body, id, label, unit) {
+    body.className = "checkpoint-body";
+    body.replaceChildren();
+    const labelNode = document.createElement("label");
+    labelNode.className = "control-label";
+    labelNode.htmlFor = id;
+    labelNode.textContent = `${label} (${unit})`;
+    const input = document.createElement("input");
+    input.id = id;
+    input.className = "number-input";
+    input.type = "number";
+    input.step = "0.01";
+    input.inputMode = "decimal";
+    body.append(labelNode, input);
+  }
+
+  function requireAtlas() {
+    try {
+      const atlas = uploadedAtlas();
+      return atlas ? { atlas } : { error: "Upload the Atlas 14 table you retrieved before submitting an answer." };
+    } catch (error) {
+      return { error: `The uploaded CSV could not be recognized as an Atlas 14 frequency table: ${error.message}` };
+    }
+  }
+
+  function compareAnswer(actual, target, unit, storedResult) {
+    const result = Checkpoints.evaluateNumeric(actual, target, { absolute: 0.03, percent: 2, closeMultiplier: 3 });
+    if (result.status === Checkpoints.RESULT.INVALID) {
+      return { status: result.status, message: `Enter a numeric answer in ${unit}.` };
+    }
+    if (result.status === Checkpoints.RESULT.CLOSE) {
+      return { status: result.status, message: "Close. Recheck the duration, recurrence interval, and whether the requested unit requires a depth/intensity conversion." };
+    }
+    if (result.status !== Checkpoints.RESULT.ACCEPTABLE) {
+      return { status: result.status, message: `That result is materially ${result.difference > 0 ? "high" : "low"}. Confirm the table row, column, and requested unit.` };
+    }
+    return { status: result.status, storedResult };
+  }
+
+  function makeCheckpoints() {
+    const lookup = assignment.lookup;
+    const lookupUnit = lookup.quantity === "depth" ? "in" : "in/hr";
+    const checkpoints = [
+      {
+        id: "random-lookup",
+        title: "Read an Atlas 14 frequency table",
+        task: `What is the ${lookup.ariYr}-year, ${Model.formatDuration(lookup.durationMin)} precipitation ${lookup.quantity}? Report ${lookupUnit}.`,
+        render: body => numericAnswer(body, "checkpoint-answer", "Your lookup", lookupUnit),
+        evaluate: () => {
+          const source = requireAtlas();
+          if (source.error) return { status: Checkpoints.RESULT.INCORRECT, message: source.error };
+          const depth = Model.getDepth(source.atlas, lookup.ariYr, lookup.durationMin);
+          const target = lookup.quantity === "depth" ? depth : Model.intensityFromDepth(depth, lookup.durationMin);
+          const result = compareAnswer(element("checkpoint-answer").value, target, lookupUnit, { target, quantity: lookup.quantity });
+          if (result.status === Checkpoints.RESULT.ACCEPTABLE) result.message = "Correct. You selected the proper duration and recurrence interval and interpreted the requested quantity.";
+          return result;
+        },
+        takeaway: "A valid lookup depends on duration, recurrence interval, quantity, and units—not just finding a nearby number."
+      },
+      {
+        id: "two-year-24-hour",
+        title: "Verify the 2-year, 24-hour depth",
+        task: "Enter the 2-year, 24-hour precipitation depth in inches.",
+        render: body => numericAnswer(body, "checkpoint-answer", "2-year, 24-hour depth", "in"),
+        evaluate: () => {
+          const source = requireAtlas();
+          if (source.error) return { status: Checkpoints.RESULT.INCORRECT, message: source.error };
+          const target = Model.getDepth(source.atlas, 2, 1440);
+          const result = compareAnswer(element("checkpoint-answer").value, target, "in", { depthIn: target });
+          if (result.status === Checkpoints.RESULT.ACCEPTABLE) {
+            sessionStorage.setItem("training-transfer:atlas14:2yr24hr-depth-in", String(target));
+            result.message = "Correct. This 2-year, 24-hour depth is commonly used again in time-of-concentration calculations, so it has been carried forward for the Transform lesson.";
+          }
+          return result;
+        },
+        takeaway: "This value often feeds sheet-flow travel-time calculations; inherited values should be checked against current location data."
+      },
+      {
+        id: "hundred-year-24-hour",
+        title: "Identify the design-storm depth",
+        task: "Enter the 100-year, 24-hour precipitation depth in inches.",
+        render: body => numericAnswer(body, "checkpoint-answer", "100-year, 24-hour depth", "in"),
+        evaluate: () => {
+          const source = requireAtlas();
+          if (source.error) return { status: Checkpoints.RESULT.INCORRECT, message: source.error };
+          const target = Model.getDepth(source.atlas, 100, 1440);
+          const result = compareAnswer(element("checkpoint-answer").value, target, "in", { depthIn: target });
+          if (result.status === Checkpoints.RESULT.ACCEPTABLE) {
+            element("manual-24hr-depth").value = target.toFixed(2);
+            result.message = "Correct. This total depth defines the 100-year, 24-hour design criterion, but it does not define how rainfall is arranged through time.";
+          }
+          return result;
+        },
+        takeaway: "Total design depth and temporal distribution are separate assumptions."
+      },
+      {
+        id: "balanced-frequency",
+        title: "Supply depths for an alternating-block storm",
+        task: "Enter the 100-year depths at 1, 6, 12, and 24 hours. These depth-duration values are used to rank the incremental blocks.",
+        render: body => {
+          body.replaceChildren();
+          body.className = "checkpoint-body checkpoint-answer-grid";
+          [[60, "1-hour"], [360, "6-hour"], [720, "12-hour"], [1440, "24-hour"]].forEach(([duration, label]) => {
+            const wrapper = document.createElement("div");
+            const labelNode = document.createElement("label");
+            labelNode.className = "control-label";
+            labelNode.htmlFor = `checkpoint-depth-${duration}`;
+            labelNode.textContent = `${label} depth (in)`;
+            const input = document.createElement("input");
+            input.id = `checkpoint-depth-${duration}`;
+            input.className = "number-input";
+            input.type = "number";
+            input.step = "0.01";
+            wrapper.append(labelNode, input);
+            body.appendChild(wrapper);
+          });
+        },
+        evaluate: () => {
+          const source = requireAtlas();
+          if (source.error) return { status: Checkpoints.RESULT.INCORRECT, message: source.error };
+          const durations = [60, 360, 720, 1440];
+          const checks = durations.map(duration => ({
+            duration,
+            evaluation: Checkpoints.evaluateNumeric(element(`checkpoint-depth-${duration}`).value, Model.getDepth(source.atlas, 100, duration), { absolute: 0.03, percent: 2, closeMultiplier: 3 })
+          }));
+          if (checks.some(item => item.evaluation.status === Checkpoints.RESULT.INVALID)) {
+            return { status: Checkpoints.RESULT.INVALID, message: "Enter all four depths before checking the storm inputs." };
+          }
+          if (checks.every(item => item.evaluation.status === Checkpoints.RESULT.ACCEPTABLE)) {
+            durations.forEach(duration => {
+              const manualId = manualInputIds[duration];
+              if (manualId) element(manualId).value = Model.getDepth(source.atlas, 100, duration).toFixed(2);
+            });
+            element("method-dropdown").value = "abm_50";
+            updateOutputs();
+            return { status: Checkpoints.RESULT.ACCEPTABLE, message: "Correct. The depth-duration curve has been translated into incremental blocks and rearranged around the storm center. The comparison sandbox is now unlocked." };
+          }
+          const closeOnly = checks.every(item => [Checkpoints.RESULT.ACCEPTABLE, Checkpoints.RESULT.CLOSE].includes(item.evaluation.status));
+          return { status: closeOnly ? Checkpoints.RESULT.CLOSE : Checkpoints.RESULT.INCORRECT, message: closeOnly ? "The set is close. Recheck rounding and make sure every entry comes from the 100-year column." : "One or more depths use the wrong duration or recurrence-interval column. Recheck the four rows." };
+        },
+        takeaway: "Alternating-block storms preserve the selected depth-duration relationship while assigning the largest incremental depths near a chosen center."
+      }
+    ];
+    return checkpoints;
+  }
+
+  function initializeCheckpoints() {
+    element("atlas-assignment-text").textContent = `Retrieve a ${assignment.requestedSeries} ${assignment.requestedQuantity} table from Atlas 14. The checkpoints also accept the counterpart format and test the necessary conversions.`;
+    state.checkpointFlow = new Checkpoints.CheckpointFlow({
+      moduleId: "precipitation",
+      checkpoints: makeCheckpoints(),
+      elements: {
+        number: element("checkpoint-number"), title: element("checkpoint-title"), task: element("checkpoint-task"),
+        body: element("checkpoint-body"), feedback: element("checkpoint-feedback"), checkButton: element("checkpoint-check"),
+        nextButton: element("checkpoint-next"), resetButton: element("checkpoint-reset"), progress: element("checkpoint-progress"),
+        completeMessage: element("checkpoint-complete")
+      },
+      onUnlock: unlocked => {
+        element("sandbox-content").classList.toggle("is-checkpoint-locked", !unlocked);
+        element("sandbox-lock").hidden = unlocked;
+      },
+      onReset: () => {
+        state.atlasText = Model.SAMPLE_ATLAS14_CSV;
+        state.atlasFilename = null;
+        state.usingSample = true;
+        element("atlas-file").value = "";
+        element("atlas-file-name").textContent = "Upload your Atlas 14 export to begin. The built-in sample remains available only for the unlocked sandbox.";
+        Object.values(manualInputIds).forEach(id => { element(id).value = ""; });
+        updateOutputs();
+      }
+    });
+  }
+
   function bindUploadControl() {
     const zone = element("atlas-upload-zone");
     const input = element("atlas-file");
@@ -310,6 +512,7 @@
     state.libraryWarnings = libraryResult.warnings;
     populateMethodDropdown();
     updateOutputs();
+    initializeCheckpoints();
 
     window.addEventListener("resize", debounce(() => {
       Charts.resize("idf-plot");

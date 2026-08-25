@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Training Apps Browser Checks</title>
+  <style>
+    body { max-width: 900px; margin: 40px auto; padding: 0 20px; font: 16px/1.5 Arial, sans-serif; color: #093d5e; }
+    #result { padding: 18px; border-radius: 8px; background: #edf2f4; white-space: pre-wrap; }
+    .pass { color: #244414; background: #edf6d5 !important; }
+    .fail { color: #7b2222; background: #fff0f0 !important; }
+  </style>
+  <script src="../shared/js/checkpoints.js"></script>
+  <script src="../precipitation_web/js/model.js"></script>
+  <script src="../losses_web/js/model.js"></script>
+  <script src="../transform_web/js/model.js"></script>
+</head>
+<body>
+  <h1>Training Apps Browser Checks</h1>
+  <div id="result">Running checks…</div>
+  <script>
+    (function () {
+      "use strict";
+      const output = document.getElementById("result");
+      let count = 0;
+      function assert(condition, message) {
+        count += 1;
+        if (!condition) throw new Error(message);
+      }
+      function close(actual, expected, tolerance, message) {
+        assert(Math.abs(actual - expected) <= tolerance, `${message}: expected ${expected}, got ${actual}`);
+      }
+
+      try {
+        const C = window.TrainingCheckpoints;
+        assert(C.evaluateNumeric(10.1, 10, { absolute: 0.1 }).status === C.RESULT.ACCEPTABLE, "Absolute tolerance failed");
+        assert(C.evaluateNumeric(10.2, 10, { absolute: 0.1 }).status === C.RESULT.CLOSE, "Close band failed");
+
+        const P = window.PrecipModel;
+        const depthAtlas = P.parseAtlas14CsvText(P.SAMPLE_ATLAS14_CSV);
+        close(P.getDepth(depthAtlas, 2, 1440), 3.95, 1e-12, "2-year depth parse failed");
+        const rows = [...new Set(depthAtlas.depthTable.map(row => row.durationMin))].map(duration => {
+          const label = depthAtlas.depthTable.find(row => row.durationMin === duration).duration;
+          const values = depthAtlas.returnPeriods.map(ari => P.intensityFromDepth(P.getDepth(depthAtlas, ari, duration), duration));
+          return `${label}:,${values.map(value => value.toFixed(9)).join(",")}`;
+        });
+        const intensityAtlas = P.parseAtlas14CsvText([
+          "Point precipitation frequency estimates (inches/hour)",
+          "Data type: Precipitation intensity",
+          "Time series type: Annual maximum",
+          `by duration for ARI (years):,${depthAtlas.returnPeriods.join(",")}`,
+          ...rows
+        ].join("\n"));
+        assert(intensityAtlas.sourceQuantity === "intensity", "Intensity format was not recognized");
+        assert(intensityAtlas.seriesType === "annual maximum", "Annual-maximum series was not recognized");
+        close(P.getDepth(intensityAtlas, 100, 180), 5.42, 1e-7, "Intensity-to-depth conversion failed");
+
+        const L = window.LossesModel;
+        const baseline = L.summarizeResult(L.computeInitialConstantLosses(1, 0.2, 30));
+        close(baseline.finalRunoffIn + baseline.totalLossIn, L.TOTAL_RAINFALL_IN, 1e-9, "Loss mass balance failed");
+        assert(L.summarizeResult(L.computeInitialConstantLosses(3, 0.2, 30)).finalRunoffIn < baseline.finalRunoffIn, "Initial-loss sensitivity failed");
+        assert(L.summarizeResult(L.computeInitialConstantLosses(1, 0.5, 30)).finalRunoffIn < baseline.finalRunoffIn, "Constant-loss sensitivity failed");
+        assert(L.summarizeResult(L.computeInitialConstantLosses(1, 0.2, 50)).totalLossIn < baseline.totalLossIn, "Impervious sensitivity failed");
+
+        const T = window.TransformModel;
+        const lowP2 = T.calculateMethodResults({ method: "tr55", p2_24hrIn: 3 }).find(item => item.pathId === 1);
+        const highP2 = T.calculateMethodResults({ method: "tr55", p2_24hrIn: 5 }).find(item => item.pathId === 1);
+        assert(lowP2.sheetTimeMin > highP2.sheetTimeMin, "P2 sheet-flow sensitivity failed");
+        const paved = T.calculateMethodResults({ method: "tr55", sheetSurfaceKeys: { 1: "smooth" } }).find(item => item.pathId === 1);
+        const grass = T.calculateMethodResults({ method: "tr55", sheetSurfaceKeys: { 1: "short_grass" } }).find(item => item.pathId === 1);
+        assert(grass.totalTimeMin > paved.totalTimeMin, "Surface-classification sensitivity failed");
+
+        output.className = "pass";
+        output.textContent = `PASS: ${count} browser checks completed.`;
+      } catch (error) {
+        output.className = "fail";
+        output.textContent = `FAIL after ${count} checks: ${error.stack || error.message}`;
+      }
+    })();
+  </script>
+</body>
+</html>

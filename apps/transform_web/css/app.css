@@ -61,6 +61,119 @@ h3 { margin: 0 0 10px; font-size: 1rem; }
   box-shadow: var(--shadow);
 }
 
+.checkpoint-card,
+.sandbox-lock {
+  margin-bottom: 18px;
+}
+
+.qc-answer {
+  display: grid;
+  gap: 10px;
+  max-width: 620px;
+}
+
+.qc-answer input[type="number"],
+.qc-answer select {
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #fff;
+}
+
+.qc-choice-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.qc-plan {
+  position: relative;
+  min-height: 190px;
+  margin: 14px 0;
+  overflow: hidden;
+  background: linear-gradient(135deg, #d9efcf 0 48%, #c4c8cb 48% 100%);
+  border: 2px solid #93afb4;
+  border-radius: 10px;
+}
+
+.qc-building {
+  position: absolute;
+  top: 45px;
+  left: 42%;
+  width: 155px;
+  height: 95px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: #4d4d4f;
+  border: 5px solid #fff;
+  font-weight: 700;
+}
+
+.qc-flow-line {
+  position: absolute;
+  top: 90px;
+  left: 8%;
+  width: 78%;
+  height: 8px;
+  background: #015d91;
+  transform: rotate(-4deg);
+}
+
+.qc-flow-line::after {
+  position: absolute;
+  right: -3px;
+  top: -8px;
+  content: "";
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+  border-left: 18px solid #015d91;
+}
+
+.surface-plan {
+  min-height: 150px;
+  background: linear-gradient(90deg, #c4c8cb 0 48%, #8fc66c 48% 100%);
+}
+
+.surface-plan::before {
+  position: absolute;
+  top: 10px;
+  left: 12%;
+  content: "PAVEMENT";
+  color: #4d4d4f;
+  font-weight: 700;
+}
+
+.surface-plan::after {
+  position: absolute;
+  top: 10px;
+  right: 17%;
+  content: "GRASS";
+  color: #244414;
+  font-weight: 700;
+}
+
+.surface-plan .qc-flow-line {
+  top: 80px;
+  left: 53%;
+  width: 38%;
+  transform: rotate(5deg);
+}
+
+.surface-comparison {
+  width: 100%;
+  margin-top: 12px;
+  border-collapse: collapse;
+}
+
+.surface-comparison th,
+.surface-comparison td {
+  padding: 9px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
 .method-tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

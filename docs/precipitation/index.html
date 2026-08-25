@@ -5,11 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Interactive Atlas 14 temporal distribution training app.">
   <title>Atlas 14 Temporal Distribution Trainer</title>
-  <link rel="stylesheet" href="css/app.css?v=266dd50e">
-  <script defer src="vendor/plotly.min.js?v=266dd50e"></script>
-  <script defer src="js/model.js?v=266dd50e"></script>
-  <script defer src="js/charts.js?v=266dd50e"></script>
-  <script defer src="js/app.js?v=266dd50e"></script>
+  <link rel="stylesheet" href="css/app.css?v=92c2d2d3">
+  <link rel="stylesheet" href="../shared/css/checkpoints.css?v=92c2d2d3">
+  <script defer src="vendor/plotly.min.js?v=92c2d2d3"></script>
+  <script defer src="js/model.js?v=92c2d2d3"></script>
+  <script defer src="js/charts.js?v=92c2d2d3"></script>
+  <script defer src="../shared/js/checkpoints.js?v=92c2d2d3"></script>
+  <script defer src="js/app.js?v=92c2d2d3"></script>
 </head>
 <body>
   <main class="page-shell">
@@ -21,16 +23,41 @@
       </p>
     </header>
 
-    <div class="app-grid">
+    <section class="card checkpoint-card" aria-labelledby="checkpoint-title">
+      <div class="checkpoint-header">
+        <div>
+          <p id="checkpoint-number" class="checkpoint-number"></p>
+          <h2 id="checkpoint-title"></h2>
+        </div>
+        <button id="checkpoint-reset" class="checkpoint-button secondary" type="button">Reset Exercise</button>
+      </div>
+      <div class="checkpoint-progress-track" aria-hidden="true"><div id="checkpoint-progress" class="checkpoint-progress"></div></div>
+      <p id="checkpoint-task" class="checkpoint-task"></p>
+      <div class="atlas-assignment">
+        <strong>Your Atlas 14 retrieval assignment</strong>
+        <p id="atlas-assignment-text"></p>
+        <p class="small-text">A valid depth or intensity table is accepted. If you supply the counterpart quantity, the app converts it before checking your interpretation.</p>
+      </div>
+      <label class="control-label" for="atlas-file">Upload Atlas 14 precipitation-frequency CSV</label>
+      <div id="atlas-upload-zone" class="upload-zone" tabindex="0" role="button" aria-controls="atlas-file">
+        <span>Drag and drop or click to select</span>
+        <input id="atlas-file" type="file" accept=".csv,text/csv" hidden>
+      </div>
+      <div id="atlas-file-name" class="file-name">Upload your Atlas 14 export to begin. The built-in sample remains available only for the unlocked sandbox.</div>
+      <div id="checkpoint-body" class="checkpoint-body"></div>
+      <div id="checkpoint-feedback" class="checkpoint-feedback" role="status" hidden></div>
+      <div class="checkpoint-actions">
+        <button id="checkpoint-check" class="checkpoint-button" type="button">Check Answer</button>
+        <button id="checkpoint-next" class="checkpoint-button" type="button" hidden>Next Checkpoint</button>
+      </div>
+      <p id="checkpoint-complete" class="checkpoint-complete" hidden>Core checkpoints complete. Temporal-distribution exploration is now unlocked below.</p>
+    </section>
+
+    <div id="sandbox-lock" class="sandbox-lock">Complete the four Atlas 14 checkpoints to unlock temporal-distribution exploration.</div>
+
+    <div id="sandbox-content" class="app-grid is-checkpoint-locked">
       <aside class="card input-panel" aria-label="Inputs">
         <h2>Inputs</h2>
-
-        <label class="control-label" for="atlas-file">Upload Atlas 14 PDS depth CSV</label>
-        <div id="atlas-upload-zone" class="upload-zone" tabindex="0" role="button" aria-controls="atlas-file">
-          <span>Drag and drop or click to select</span>
-          <input id="atlas-file" type="file" accept=".csv,text/csv" hidden>
-        </div>
-        <div id="atlas-file-name" class="file-name">Using built-in sample until a CSV is uploaded.</div>
 
         <div class="manual-inputs">
           <label class="control-label" for="manual-5min-depth">100-year 5-minute depth read from Atlas 14 (in)</label>
@@ -72,7 +99,7 @@
 
         <h3>Assumptions</h3>
         <ul class="assumption-list">
-          <li>Atlas input is a PDS precipitation depth CSV in inches.</li>
+          <li>Atlas input may be a depth or intensity CSV using a partial-duration or annual-maximum series.</li>
           <li>The reference event is fixed at the 100-year ARI.</li>
           <li>The generated storm duration is 24 hours.</li>
           <li>The generated storm timestep is 5 minutes.</li>

@@ -28,13 +28,15 @@ apps/precipitation_web/
 
 The temporal distribution library is loaded with `fetch`, so serve the folder through a local web server rather than opening `index.html` directly.
 
-From `apps/precipitation_web`:
+From the repository root (the `apps` directory must be served so shared checkpoint assets resolve):
 
 ```bash
-python -m http.server 8000
+python -m http.server 8000 -d apps
 ```
 
-Then open `http://localhost:8000/`.
+Then open `http://localhost:8000/precipitation_web/`.
+
+The four core checkpoints require an uploaded Atlas 14 frequency CSV. Both depth and intensity exports are accepted, as are partial-duration and annual-maximum series; the model normalizes values to depth internally. The built-in sample is retained for the unlocked temporal-distribution sandbox.
 
 ## Add temporal distributions
 

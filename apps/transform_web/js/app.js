@@ -4,9 +4,15 @@
 
   const Model = globalScope.TransformModel;
   const Charts = globalScope.TransformCharts;
-  if (!Model || !Charts) throw new Error("model.js and charts.js must load before app.js.");
+  const Checkpoints = globalScope.TrainingCheckpoints;
+  if (!Model || !Charts || !Checkpoints) throw new Error("model.js, charts.js, and checkpoints.js must load before app.js.");
 
-  const state = { method: "tr55", updateTimer: null };
+  function carriedP2Depth() {
+    const value = Number(sessionStorage.getItem("training-transfer:atlas14:2yr24hr-depth-in"));
+    return Number.isFinite(value) && value > 0 ? value : 3.95;
+  }
+
+  const state = { method: "tr55", updateTimer: null, verifiedP2: Model.P2_24HR_IN, checkpointFlow: null };
 
   const byId = id => document.getElementById(id);
   const format0 = value => Number(value).toLocaleString("en-US", { maximumFractionDigits: 0 });
@@ -290,6 +296,7 @@
       shallowLimitFt: getRadioValue("shallow-limit"),
       kerbyLimitFt: getRadioValue("kerby-limit"),
       channelVelocityFps: Number(byId("channel-velocity").value),
+      p2_24hrIn: state.verifiedP2,
       sheetSurfaceKeys: collectSurfaceKeys("sheet-surface"),
       shallowSurfaceKeys: collectSurfaceKeys("shallow-surface"),
       kerbySurfaceKeys: collectSurfaceKeys("kerby-surface")
@@ -419,11 +426,134 @@
     });
   }
 
+  function surfaceCase(surfaceKey) {
+    const results = Model.calculateMethodResults({
+      method: "tr55",
+      sheetLimitFt: 100,
+      shallowLimitFt: 2000,
+      channelVelocityFps: 6,
+      p2_24hrIn: carriedP2Depth(),
+      sheetSurfaceKeys: { 1: surfaceKey }
+    });
+    return Model.addHydrographMetrics(results).find(item => item.pathId === 1);
+  }
+
+  function initializeCheckpoints() {
+    const correctP2 = carriedP2Depth();
+    const pavement = surfaceCase("smooth");
+    const grass = surfaceCase("short_grass");
+    const checkpoints = [
+      {
+        id: "stale-p2",
+        title: "QC the inherited rainfall depth",
+        task: `The supplied Tc worksheet uses ${Model.P2_24HR_IN.toFixed(2)} inches for the 2-year, 24-hour depth. Replace it with the value verified in the Precipitation module.`,
+        render: body => {
+          body.className = "checkpoint-body qc-answer";
+          body.innerHTML = `<label for="qc-p2-depth"><strong>Verified 2-year, 24-hour depth (in)</strong></label><input id="qc-p2-depth" type="number" step="0.01" inputmode="decimal">`;
+        },
+        evaluate: () => {
+          const evaluation = Checkpoints.evaluateNumeric(byId("qc-p2-depth").value, correctP2, { absolute: 0.03, percent: 2, closeMultiplier: 3 });
+          if (evaluation.status === Checkpoints.RESULT.ACCEPTABLE) {
+            state.verifiedP2 = correctP2;
+            update();
+            return { status: evaluation.status, storedResult: { depthIn: correctP2 }, message: "Correct. The inherited rainfall depth has been replaced with the location-specific value carried from the Precipitation lesson. Never assume a spreadsheet default is current." };
+          }
+          if (evaluation.status === Checkpoints.RESULT.CLOSE) return { status: evaluation.status, message: "Close. Use the value you verified for the same location, series, duration, and units." };
+          return { status: evaluation.status, message: "That does not match the carried 2-year, 24-hour depth. Recheck the Precipitation result rather than trusting the worksheet default." };
+        },
+        takeaway: "Inherited spreadsheet values are inputs to be verified, not facts."
+      },
+      {
+        id: "flow-path-qc",
+        title: "Review the physical flow path",
+        task: "Would you accept this mapped Tc flow path, and what is the controlling QC issue?",
+        render: body => {
+          body.className = "checkpoint-body qc-answer";
+          body.innerHTML = `
+            <div class="qc-plan" role="img" aria-label="Mapped flow path crossing directly through a building footprint">
+              <div class="qc-flow-line"></div><div class="qc-building">BUILDING</div>
+            </div>
+            <div class="qc-choice-row">
+              <label><input type="radio" name="flow-accept" value="accept"> Accept</label>
+              <label><input type="radio" name="flow-accept" value="reject"> Reject</label>
+            </div>
+            <label for="flow-reason"><strong>Primary reason</strong></label>
+            <select id="flow-reason">
+              <option value="">Select a reason</option>
+              <option value="longest">It is not the geometrically longest possible line</option>
+              <option value="building">The assumed runoff route passes through a building and is not physically continuous</option>
+              <option value="color">The mapped line color is difficult to see</option>
+            </select>`;
+        },
+        evaluate: () => {
+          const choice = document.querySelector('input[name="flow-accept"]:checked');
+          const reason = byId("flow-reason").value;
+          if (choice && choice.value === "reject" && reason === "building") {
+            return { status: Checkpoints.RESULT.ACCEPTABLE, message: "Correct. A Tc path represents actual travel from the temporally most remote contributing point. Water cannot follow the assumed surface route through a building, so the analysis is physically inconsistent." };
+          }
+          if (!choice || !reason) return { status: Checkpoints.RESULT.INVALID, message: "Choose accept or reject and identify the controlling reason." };
+          if (choice.value === "accept") return { status: Checkpoints.RESULT.INCORRECT, message: "Reconsider whether a drop of water could physically travel along every segment of the mapped line." };
+          return { status: Checkpoints.RESULT.INCORRECT, message: "Rejecting it is appropriate, but focus on physical continuity—not whether it is the longest line or how it is drawn." };
+        },
+        takeaway: "The controlling path is the hydraulically most remote defensible route, not merely the longest line on a map."
+      },
+      {
+        id: "surface-qc",
+        title: "Classify the sheet-flow surface",
+        task: "The mapped start point and arrow lie on the grass side of the visible boundary. Select the defensible sheet-flow surface and review the modeled consequence.",
+        render: body => {
+          body.className = "checkpoint-body qc-answer";
+          body.innerHTML = `
+            <div class="qc-plan surface-plan" role="img" aria-label="Sheet-flow path beginning just inside grass next to a pavement boundary"><div class="qc-flow-line"></div></div>
+            <label for="surface-choice"><strong>Defensible classification</strong></label>
+            <select id="surface-choice"><option value="">Select surface</option><option value="smooth">Pavement / smooth surface</option><option value="short_grass">Short grass</option></select>
+            <table class="surface-comparison"><thead><tr><th>Assumption</th><th>Path 1 Tc</th><th>Modeled peak</th></tr></thead><tbody>
+              <tr><td>Pavement / smooth</td><td>${format1(pavement.totalTimeMin)} min</td><td>${format0(pavement.peakFlowCfs)} cfs</td></tr>
+              <tr><td>Short grass</td><td>${format1(grass.totalTimeMin)} min</td><td>${format0(grass.peakFlowCfs)} cfs</td></tr>
+            </tbody></table>`;
+        },
+        evaluate: () => {
+          const choice = byId("surface-choice").value;
+          if (choice === "short_grass") {
+            return { status: Checkpoints.RESULT.ACCEPTABLE, message: `Correct. The imagery supports grass. That small spatial shift changes roughness, increasing Path 1 Tc from ${format1(pavement.totalTimeMin)} to ${format1(grass.totalTimeMin)} minutes and changing the modeled peak from ${format0(pavement.peakFlowCfs)} to ${format0(grass.peakFlowCfs)} cfs.` };
+          }
+          if (!choice) return { status: Checkpoints.RESULT.INVALID, message: "Select the surface supported by the mapped start point." };
+          return { status: Checkpoints.RESULT.INCORRECT, message: "The arrow begins to the right of the boundary, within the grass. Classify the surface actually traversed, even when a nearby pavement interpretation is tempting." };
+        },
+        takeaway: "Small spatial choices matter when they change the physical flow regime or roughness assumption."
+      }
+    ];
+
+    state.checkpointFlow = new Checkpoints.CheckpointFlow({
+      moduleId: "transform",
+      checkpoints,
+      elements: {
+        number: byId("checkpoint-number"), title: byId("checkpoint-title"), task: byId("checkpoint-task"),
+        body: byId("checkpoint-body"), feedback: byId("checkpoint-feedback"), checkButton: byId("checkpoint-check"),
+        nextButton: byId("checkpoint-next"), resetButton: byId("checkpoint-reset"), progress: byId("checkpoint-progress"),
+        completeMessage: byId("checkpoint-complete")
+      },
+      onUnlock: unlocked => {
+        ["sandbox-tabs", "sandbox-main", "sandbox-map", "sandbox-notes"].forEach(id => byId(id).classList.toggle("is-checkpoint-locked", !unlocked));
+        byId("sandbox-lock").hidden = unlocked;
+        if (unlocked) {
+          state.verifiedP2 = correctP2;
+          update();
+        }
+      },
+      onReset: () => {
+        state.verifiedP2 = Model.P2_24HR_IN;
+        update();
+      }
+    });
+  }
+
   function initialize() {
     buildSurfaceGrids();
     byId("total-excess").textContent = Model.TOTAL_EXCESS_IN.toFixed(3);
     bindEvents();
     update();
+    initializeCheckpoints();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initialize);

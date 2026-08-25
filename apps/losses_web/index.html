@@ -6,6 +6,7 @@
   <meta name="description" content="Interactive training app for initial and constant hydrologic loss calculations.">
   <title>Hydrologic Losses Explorer</title>
   <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="../shared/css/checkpoints.css">
 </head>
 <body>
   <main class="app-shell">
@@ -16,6 +17,27 @@
         the timing and volume of runoff from a fixed 24-hour, 10-inch storm.
       </p>
     </header>
+
+    <section class="card checkpoint-card" aria-labelledby="checkpoint-title">
+      <div class="checkpoint-header">
+        <div>
+          <p id="checkpoint-number" class="checkpoint-number"></p>
+          <h2 id="checkpoint-title"></h2>
+        </div>
+        <button id="checkpoint-reset" class="checkpoint-button secondary" type="button">Reset Exercise</button>
+      </div>
+      <div class="checkpoint-progress-track" aria-hidden="true"><div id="checkpoint-progress" class="checkpoint-progress"></div></div>
+      <p id="checkpoint-task" class="checkpoint-task"></p>
+      <div id="checkpoint-body" class="checkpoint-body"></div>
+      <div id="checkpoint-feedback" class="checkpoint-feedback" role="status" hidden></div>
+      <div class="checkpoint-actions">
+        <button id="checkpoint-check" class="checkpoint-button" type="button">Check Answer</button>
+        <button id="checkpoint-next" class="checkpoint-button" type="button" hidden>Next Checkpoint</button>
+      </div>
+      <p id="checkpoint-complete" class="checkpoint-complete" hidden>Loss checkpoints complete. All three controls are now unlocked for free exploration.</p>
+    </section>
+
+    <div id="sandbox-lock" class="sandbox-lock">Training mode: only the control required by the active checkpoint is enabled.</div>
 
     <div class="app-grid">
       <aside class="card input-panel" aria-labelledby="inputs-heading">
@@ -130,6 +152,7 @@
   <script src="vendor/plotly.min.js"></script>
   <script src="js/model.js"></script>
   <script src="js/charts.js"></script>
+  <script src="../shared/js/checkpoints.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

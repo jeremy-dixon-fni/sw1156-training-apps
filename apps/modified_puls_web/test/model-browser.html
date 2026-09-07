@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Modified Puls browser model checks</title><style>body{max-width:900px;margin:35px auto;font:16px/1.5 Arial,sans-serif;color:#093d5e}#result{padding:18px;border-radius:9px;background:#edf2f4;white-space:pre-wrap}.pass{color:#244414;background:#edf6d5!important}.fail{color:#7b2222;background:#fff0f0!important}</style></head>
+<body><h1>Modified Puls browser model checks</h1><div id="result">Running routing parity and QC model checks…</div>
+<script type="module">
+  import { routeBothCases, firstClampTime, continuitySummary, attenuationAndLag } from "../js/routing.js";
+  import { QC_RESULT, evaluateReachCurve, evaluateGeometryAction, evaluateResolution, evaluateSubreaches, evaluateFinalReview, geometryComparison } from "../js/qc.js";
+  const output = document.getElementById("result");
+  let checks = 0;
+  const assert = (condition, message) => { checks += 1; if (!condition) throw new Error(message); };
+  const close = (actual, expected, message) => assert(Math.abs(actual - expected) <= 1e-6 + 1e-6 * Math.abs(expected), `${message}: ${actual} != ${expected}`);
+  const closeArray = (actual, expected, message) => { assert(actual.length === expected.length, `${message} length`); actual.forEach((value, i) => close(value, expected[i], `${message}[${i}]`)); };
+  try {
+    const golden = await fetch("golden.json").then((response) => response.json());
+    for (const item of golden.cases) {
+      const result = routeBothCases(item.hydro, item.curve, item.multiplier);
+      closeArray(result.outflowCfs, item.expected.outflowCfs, `${item.id} outflow`);
+      closeArray(result.storageAcft, item.expected.storageAcft, `${item.id} storage`);
+      closeArray(result.modifiedOutflowCfs, item.expected.modifiedOutflowCfs, `${item.id} modified outflow`);
+      closeArray(result.modifiedStorageAcft, item.expected.modifiedStorageAcft, `${item.id} modified storage`);
+      assert(JSON.stringify(result.clampedBase) === JSON.stringify(item.expected.clampedBase), `${item.id} base clamp mask`);
+      assert(JSON.stringify(result.clampedModified) === JSON.stringify(item.expected.clampedModified), `${item.id} modified clamp mask`);
+      assert(firstClampTime(result) === item.expected.firstClampTime, `${item.id} first clamp time`);
+      const continuity = continuitySummary(result);
+      close(continuity.residualPct, item.expected.continuity.residualPct, `${item.id} continuity`);
+      close(attenuationAndLag(result.timeMin, result.inflowCfs, result.outflowCfs).attenuationPct, item.expected.attenuationOutPct, `${item.id} attenuation`);
+    }
+    assert(evaluateReachCurve("MP03_PROP_2", "accept").status === QC_RESULT.ACCEPTABLE, "Reach QC evaluation");
+    assert(evaluateGeometryAction("regenerate").status === QC_RESULT.ACCEPTABLE, "Geometry QC evaluation");
+    assert(evaluateResolution("reject", "operating-range-resolution", "A").status === QC_RESULT.ACCEPTABLE, "Resolution QC evaluation");
+    assert(evaluateSubreaches("reject").status === QC_RESULT.ACCEPTABLE, "Subreach QC evaluation");
+    assert(evaluateFinalReview("return", ["stale-geometry", "inadequate-resolution"]).status === QC_RESULT.ACCEPTABLE, "Final QC evaluation");
+    const comparison = geometryComparison();
+    assert(comparison.oldPeak.peak > 0 && comparison.currentPeak.peak > 0, "Checkpoint routing comparison");
+    output.className = "pass";
+    output.textContent = `PASS: ${checks} routing parity and QC model checks completed.`;
+  } catch (error) {
+    output.className = "fail";
+    output.textContent = `FAIL: ${error.stack || error.message}`;
+  }
+</script></body></html>

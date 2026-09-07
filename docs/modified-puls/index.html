@@ -4,22 +4,66 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Modified Puls Routing — Teaching Companion</title>
-  <link rel="stylesheet" href="css/styles.css?v=f67e8d01" />
-  <script src="vendor/plotly.min.js?v=f67e8d01"></script>
+  <link rel="stylesheet" href="css/styles.css?v=e0420a5e" />
+  <link rel="stylesheet" href="../shared/css/checkpoints.css?v=e0420a5e" />
+  <script src="vendor/plotly.min.js?v=e0420a5e"></script>
 </head>
 <body>
   <header class="appbar">
-    <h1>Modified Puls Routing <span>Teaching Companion</span></h1>
-    <nav class="tabs" id="tabs">
-      <button class="tab" data-act="1"><b>1</b> Concept</button>
-      <button class="tab" data-act="2"><b>2</b> Mechanics</button>
-      <button class="tab" data-act="3"><b>3</b> Result</button>
-    </nav>
+    <div>
+      <p class="eyebrow">Stormwater Training Tools</p>
+      <h1>Modified Puls Routing <span>QC Review and Explorer</span></h1>
+    </div>
   </header>
 
-  <main class="layout">
-    <!-- Left input rail (persists across acts) -->
-    <aside class="rail card">
+  <main class="page-wrap">
+    <section class="card checkpoint-card" aria-labelledby="checkpoint-title">
+      <div class="checkpoint-header">
+        <div>
+          <p id="checkpoint-number" class="checkpoint-number"></p>
+          <h2 id="checkpoint-title"></h2>
+        </div>
+        <button id="checkpoint-reset" class="checkpoint-button secondary" type="button">Reset Training</button>
+      </div>
+      <div class="checkpoint-progress-track" aria-hidden="true"><div id="checkpoint-progress" class="checkpoint-progress"></div></div>
+      <p id="checkpoint-task" class="checkpoint-task"></p>
+      <div id="checkpoint-body" class="checkpoint-body"></div>
+      <div id="checkpoint-feedback" class="checkpoint-feedback" role="status" hidden></div>
+      <div class="checkpoint-actions">
+        <button id="checkpoint-check" class="checkpoint-button" type="button">Check Answer</button>
+        <button id="checkpoint-next" class="checkpoint-button" type="button" hidden>Next Checkpoint</button>
+      </div>
+      <div id="checkpoint-complete" class="checkpoint-complete" hidden>
+        <strong>Before reviewing the routed hydrograph, verify:</strong>
+        <ol>
+          <li>what physical reach the element represents,</li>
+          <li>that the correct curve is assigned,</li>
+          <li>that the curve represents current geometry,</li>
+          <li>that the curve adequately represents the routed range, and</li>
+          <li>that the routing discretization is defensible.</li>
+        </ol>
+      </div>
+    </section>
+
+    <div id="sandbox-lock" class="sandbox-lock">Complete the five QC checkpoints to unlock the Modified Puls explorer.</div>
+
+    <section id="sandbox-shell" class="sandbox-shell is-checkpoint-locked">
+      <div class="sandbox-heading card">
+        <div>
+          <p class="eyebrow">Unlocked sandbox</p>
+          <h2>Modified Puls Routing Explorer</h2>
+          <p>First prove that the setup deserves to be trusted. Then explore what Modified Puls routing does.</p>
+        </div>
+        <nav class="tabs" id="tabs" aria-label="Explorer sections">
+          <button class="tab" data-act="1"><b>1</b> Concept</button>
+          <button class="tab" data-act="2"><b>2</b> Mechanics</button>
+          <button class="tab" data-act="3"><b>3</b> Result</button>
+        </nav>
+      </div>
+
+      <div class="layout">
+        <!-- Left input rail (persists across acts) -->
+        <aside class="rail card">
       <h3>Example</h3>
       <select id="preset-select" aria-label="Preset example"></select>
       <p id="preset-blurb" class="muted small"></p>
@@ -53,10 +97,10 @@
           <a href="#" id="dl-curve">⬇ curve CSV</a>
         </div>
       </div>
-    </aside>
+        </aside>
 
-    <!-- Main panel: three acts -->
-    <section class="main">
+        <!-- Main panel: three acts -->
+        <section class="main">
       <div id="status" class="card status"></div>
 
       <!-- ACT 1: CONCEPT -->
@@ -115,9 +159,12 @@
         </div>
         <div class="card note-card" id="result-notes"></div>
       </div>
+        </section>
+      </div>
     </section>
   </main>
 
-  <script type="module" src="js/app.js?v=f67e8d01"></script>
+  <script src="../shared/js/checkpoints.js?v=e0420a5e"></script>
+  <script type="module" src="js/app.js?v=e0420a5e"></script>
 </body>
 </html>

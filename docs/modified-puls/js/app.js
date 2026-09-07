@@ -1,13 +1,21 @@
 // Modified Puls Teaching Companion — app orchestration.
 // Owns state, wires the left rail + tabs + stepper, computes routing, and keeps the URL hash in sync.
 
-import { PRESETS, DEFAULT_PRESET_ID } from "./presets.js?v=f67e8d01";
+import { PRESETS, DEFAULT_PRESET_ID } from "./presets.js?v=e0420a5e";
 import {
   routeBothCases, peakStats, attenuationAndLag, continuitySummary, firstClampTime,
-} from "./routing.js?v=f67e8d01";
-import { buildSteps } from "./steps.js?v=f67e8d01";
-import { parseHydrograph, parseStorageDischarge, hydrographToCsv, storageDischargeToCsv } from "./csv.js?v=f67e8d01";
-import { drawConcept, drawResultHydro, drawCurve, drawMechCurve, resize } from "./charts.js?v=f67e8d01";
+} from "./routing.js?v=e0420a5e";
+import { buildSteps } from "./steps.js?v=e0420a5e";
+import { parseHydrograph, parseStorageDischarge, hydrographToCsv, storageDischargeToCsv } from "./csv.js?v=e0420a5e";
+import {
+  drawConcept, drawResultHydro, drawCurve, drawMechCurve, drawGeometryCurveComparison,
+  drawGeometryHydroComparison, drawResolutionComparison, drawFinalReviewHydro,
+  drawFinalReviewCurve, resize,
+} from "./charts.js?v=e0420a5e";
+import * as QC from "./qc.js?v=e0420a5e";
+
+const Checkpoints = window.TrainingCheckpoints;
+if (!Checkpoints) throw new Error("The shared checkpoint framework must load before app.js.");
 
 const PRESET_BY_ID = Object.fromEntries(PRESETS.map((p) => [p.id, p]));
 const CUSTOM_ID = "custom";
@@ -19,6 +27,7 @@ const state = {
   step: 0,
   // Uploaded data lives in its own dropdown entry instead of overwriting a preset.
   custom: null, // { hydro, curve, hydroName, curveName, baseLabel }
+  checkpointFlow: null,
 };
 
 let computed = null; // { result, steps, hydro, curve, error }
@@ -338,6 +347,271 @@ function stopPlay() {
   $("step-play").textContent = "▶▶ Auto-play";
 }
 
+// ---------- QC checkpoint training ----------
+function detailGrid(entries) {
+  return `<dl class="qc-detail-grid">${entries.map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join("")}</dl>`;
+}
+
+function checkedValue(name) {
+  const selected = document.querySelector(`input[name="${name}"]:checked`);
+  return selected ? selected.value : "";
+}
+
+function renderReachDefinition() {
+  const reach = QC.REACH;
+  return `<section class="qc-scenario-card reach-definition"><h3>Reach Definition</h3>${detailGrid([
+    ["Name", reach.name],
+    ["Upstream", reach.upstream],
+    ["Downstream", reach.downstream],
+    ["Stations", `${reach.upstreamStation} to ${reach.downstreamStation}`],
+    ["Condition", reach.condition],
+    ["Reach length", `${reach.reachLengthFt.toLocaleString()} ft`],
+  ])}</section>`;
+}
+
+function renderCurveMetadata(curve) {
+  if (!curve) return `<p class="muted">Select a curve to inspect its source metadata.</p>`;
+  return detailGrid([
+    ["Curve name", curve.id],
+    ["Reach limits", curve.reachLimits],
+    ["Stations", curve.stations],
+    ["Condition", curve.condition],
+    ["Geometry source", curve.geometryRevision],
+    ["Source hydraulic model", curve.sourceModel],
+  ]);
+}
+
+function resetExplorer() {
+  stopPlay();
+  state.presetId = DEFAULT_PRESET_ID;
+  state.multiplier = 1;
+  state.act = 1;
+  state.step = 0;
+  state.custom = null;
+  rebuildPresetOptions();
+  updateRailText();
+  $("mult-slider").value = "1";
+  $("mult-out").textContent = "1.00";
+  refresh();
+}
+
+function initializeCheckpoints() {
+  const checkpoints = [
+    {
+      id: "reach-and-curve",
+      title: "Define the reach and verify the curve",
+      task: "Identify the physical routing reach, then verify that the selected storage-discharge curve represents those same limits and condition.",
+      render: (body) => {
+        body.className = "checkpoint-body qc-checkpoint-body";
+        body.innerHTML = `
+          <div class="qc-two-col">
+            ${renderReachDefinition()}
+            <section class="qc-scenario-card">
+              <h3>Curve Selection</h3>
+              <label class="control-label" for="qc-curve-select">Assigned storage-discharge curve</label>
+              <select id="qc-curve-select" class="qc-control">
+                <option value="">Select a curve</option>
+                ${QC.CURVES.map((curve) => `<option value="${curve.id}">${curve.id}</option>`).join("")}
+              </select>
+              <h4>Selected Curve Information</h4>
+              <div id="qc-curve-metadata">${renderCurveMetadata(null)}</div>
+            </section>
+          </div>
+          <fieldset class="qc-decision"><legend>Does this storage-discharge curve represent the physical reach defined above?</legend>
+            <label><input type="radio" name="qc-reach-decision" value="accept"> Accept</label>
+            <label><input type="radio" name="qc-reach-decision" value="reject"> Reject / wrong curve</label>
+          </fieldset>`;
+        const select = $("qc-curve-select");
+        select.addEventListener("change", () => {
+          $("qc-curve-metadata").innerHTML = renderCurveMetadata(QC.curveById(select.value));
+        });
+      },
+      evaluate: () => QC.evaluateReachCurve($("qc-curve-select").value, checkedValue("qc-reach-decision")),
+      takeaway: "A routing curve should be traceable to a specific physical reach. Naming conventions are helpful, but they are not sufficient QC.",
+    },
+    {
+      id: "geometry-revision",
+      title: "Verify the curve represents current geometry",
+      task: "Determine whether a curve generated before meaningful geometry revisions can remain assigned to the current model.",
+      render: (body) => {
+        body.className = "checkpoint-body qc-checkpoint-body";
+        body.innerHTML = `
+          <div class="qc-two-col">
+            <section class="qc-scenario-card"><h3>Revision History</h3><ol class="revision-list">${QC.GEOMETRY_REVIEW.history.map((item, index) => `<li class="${index === 1 ? "curve-created" : index >= 2 ? "later-change" : ""}">${item}</li>`).join("")}</ol></section>
+            <section class="qc-scenario-card"><h3>Review Finding</h3>${detailGrid([
+              ["Assigned curve", QC.GEOMETRY_REVIEW.assignedCurveId],
+              ["Curve geometry", `Proposed Geometry Rev. ${QC.GEOMETRY_REVIEW.curveRevision}`],
+              ["Current model", `Proposed Geometry Rev. ${QC.GEOMETRY_REVIEW.currentRevision}`],
+              ["Meaningful changes", "Channel widening, overbank grading, and retaining wall"],
+            ])}</section>
+          </div>
+          <fieldset class="qc-decision"><legend>The curve was generated from Rev. 2 geometry and the model is now Rev. 4. What should you do?</legend>
+            <label><input type="radio" name="qc-geometry-action" value="keep"> Keep the existing curve</label>
+            <label><input type="radio" name="qc-geometry-action" value="regenerate"> Regenerate / re-export the storage-discharge curve</label>
+          </fieldset>
+          <section id="qc-geometry-reveal" class="qc-reveal" hidden>
+            <h3>Revision comparison</h3>
+            <p>The change is realistic but visible: the same inflow produces different routing when current storage and conveyance are used.</p>
+            <div class="qc-plot-grid"><div><h4>Storage-discharge curves</h4><div id="qc-geometry-curves" class="qc-plot"></div></div><div><h4>Resulting routed hydrographs</h4><div id="qc-geometry-hydro" class="qc-plot"></div></div></div>
+            <p id="qc-geometry-metrics" class="qc-chart-note"></p>
+          </section>`;
+      },
+      evaluate: () => {
+        const result = QC.evaluateGeometryAction(checkedValue("qc-geometry-action"));
+        if (result.status === QC.QC_RESULT.ACCEPTABLE) {
+          const comparison = QC.geometryComparison();
+          $("qc-geometry-reveal").hidden = false;
+          drawGeometryCurveComparison("qc-geometry-curves", QC.GEOMETRY_CURVES);
+          drawGeometryHydroComparison("qc-geometry-hydro", comparison);
+          $("qc-geometry-metrics").textContent = `Rev. 2 routed peak: ${fmt0(comparison.oldPeak.peak)} cfs; Rev. 4 routed peak: ${fmt0(comparison.currentPeak.peak)} cfs.`;
+        }
+        return result;
+      },
+      takeaway: "When geometry affecting storage or conveyance changes, verify that the Modified Puls curve was regenerated.",
+    },
+    {
+      id: "curve-resolution",
+      title: "Review curve resolution through the routed range",
+      task: "Determine whether the supplied points adequately define the portion of the storage-discharge curve actually used by the event.",
+      render: (body) => {
+        body.className = "checkpoint-body qc-checkpoint-body";
+        body.innerHTML = `
+          <section class="qc-scenario-card">
+            <h3>Curve Resolution Review</h3>
+            <p>The event routes primarily between <strong>${QC.RESOLUTION_REVIEW.operatingRangeCfs[0].toLocaleString()} and ${QC.RESOLUTION_REVIEW.operatingRangeCfs[1].toLocaleString()} cfs</strong>. Curve B is the curve currently assigned for review.</p>
+            <div id="qc-resolution-plot" class="qc-plot wide"></div>
+          </section>
+          <fieldset class="qc-decision"><legend>Would you accept Curve B for routing this event?</legend>
+            <label><input type="radio" name="qc-resolution-decision" value="accept"> Accept</label>
+            <label><input type="radio" name="qc-resolution-decision" value="reject"> Reject</label>
+          </fieldset>
+          <div id="qc-resolution-followup" class="qc-followup" hidden>
+            <label class="control-label" for="qc-resolution-concern">Primary concern</label>
+            <select id="qc-resolution-concern" class="qc-control">
+              <option value="">Select a concern</option>
+              <option value="operating-range-resolution">Too few points through the routed operating range</option>
+              <option value="max-storage">Maximum storage is too high</option>
+              <option value="max-discharge">Maximum discharge is too high</option>
+              <option value="none">No problem</option>
+            </select>
+            <fieldset class="qc-decision compact"><legend>Which curve is better suited to this event?</legend>
+              <label><input type="radio" name="qc-preferred-curve" value="A"> Curve A</label>
+              <label><input type="radio" name="qc-preferred-curve" value="B"> Curve B</label>
+            </fieldset>
+          </div>`;
+        drawResolutionComparison("qc-resolution-plot", QC.RESOLUTION_REVIEW);
+        document.querySelectorAll('input[name="qc-resolution-decision"]').forEach((input) => input.addEventListener("change", () => {
+          const rejecting = input.checked && input.value === "reject";
+          $("qc-resolution-followup").hidden = !rejecting;
+          if (!rejecting) {
+            $("qc-resolution-concern").value = "";
+            document.querySelectorAll('input[name="qc-preferred-curve"]').forEach((choice) => { choice.checked = false; });
+          }
+        }));
+      },
+      evaluate: () => QC.evaluateResolution(
+        checkedValue("qc-resolution-decision"),
+        $("qc-resolution-concern").value,
+        checkedValue("qc-preferred-curve"),
+      ),
+      takeaway: "Point distribution through the operating range matters more than total row count because Modified Puls interpolates between supplied points.",
+    },
+    {
+      id: "subreach-review",
+      title: "Review the routing discretization",
+      task: "Apply the supplied project-specific review information without treating this training scenario as a universal subreach rule.",
+      render: (body) => {
+        const scenario = QC.SUBREACH_REVIEW;
+        body.className = "checkpoint-body qc-checkpoint-body";
+        body.innerHTML = `
+          <div class="qc-two-col">
+            <section class="qc-scenario-card"><h3>Subreach Configuration</h3>${detailGrid([
+              ["Physical reach length", `${scenario.physicalReachLengthFt.toLocaleString()} ft`],
+              ["Selected subreaches", scenario.selectedSubreachCount],
+              ["Approx. subreach length", `${scenario.resultingSubreachLengthFt.toLocaleString()} ft`],
+            ])}</section>
+            <section class="qc-scenario-card project-reference"><h3>${scenario.referenceLabel}</h3><p>${scenario.referenceText}</p><p><strong>Supplied review range:</strong> ${scenario.recommendedRange[0]}–${scenario.recommendedRange[1]} subreaches for this exercise.</p></section>
+          </div>
+          <fieldset class="qc-decision"><legend>Would you accept this subreach configuration?</legend>
+            <label><input type="radio" name="qc-subreach-decision" value="accept"> Accept</label>
+            <label><input type="radio" name="qc-subreach-decision" value="reject"> Return for correction or supporting documentation</label>
+          </fieldset>`;
+      },
+      evaluate: () => QC.evaluateSubreaches(checkedValue("qc-subreach-decision")),
+      takeaway: "Subreach adequacy must be reviewed against the applicable project method and supporting evidence—not a universal count or length threshold.",
+    },
+    {
+      id: "final-review",
+      title: "Complete the integrated QC review",
+      task: "Review the package using only the reach, revision, curve-resolution, and discretization checks covered in the preceding checkpoints.",
+      render: (body) => {
+        const review = QC.FINAL_REVIEW;
+        const curve = QC.curveById(review.selectedCurveId);
+        body.className = "checkpoint-body qc-checkpoint-body";
+        body.innerHTML = `
+          <section class="qc-review-package">
+            <h3>Modified Puls Review Package</h3>
+            <div class="qc-package-grid">
+              <div>${renderReachDefinition()}</div>
+              <section class="qc-scenario-card"><h4>Assigned Curve</h4>${detailGrid([
+                ["Curve", curve.id], ["Reach limits", curve.reachLimits], ["Condition", curve.condition],
+                ["Curve geometry", `Rev. ${review.curveGeometryRevision}`], ["Current geometry", `Rev. ${review.currentGeometryRevision}`],
+              ])}</section>
+              <section class="qc-scenario-card"><h4>Curve Coverage</h4>${detailGrid([
+                ["Curve", review.resolutionCurveId], ["Total supplied points", QC.RESOLUTION_REVIEW.curves.B.storageAcft.length],
+                ["Routed operating range", `${review.operatingRangeCfs[0].toLocaleString()}–${review.operatingRangeCfs[1].toLocaleString()} cfs`],
+              ])}</section>
+              <section class="qc-scenario-card"><h4>Routing Discretization</h4>${detailGrid([
+                ["Subreaches", review.subreachCount], ["Approx. subreach length", `${review.resultingSubreachLengthFt.toLocaleString()} ft`],
+                ["Review note", review.subreachStatement],
+              ])}</section>
+            </div>
+            <div class="qc-plot-grid"><div><h4>Assigned storage-discharge curve</h4><div id="qc-final-curve" class="qc-plot"></div></div><div><h4>Resulting routed hydrograph</h4><div id="qc-final-hydro" class="qc-plot"></div></div></div>
+          </section>
+          <fieldset class="qc-decision"><legend>Would you approve this Modified Puls routing setup or return it for correction?</legend>
+            <label><input type="radio" name="qc-final-decision" value="approve"> Approve</label>
+            <label><input type="radio" name="qc-final-decision" value="return"> Return for correction</label>
+          </fieldset>
+          <fieldset id="qc-final-reasons" class="qc-decision reason-list" hidden><legend>Reason(s) for returning the package</legend>
+            <label><input type="checkbox" value="wrong-reach"> Selected curve represents the wrong physical reach</label>
+            <label><input type="checkbox" value="stale-geometry"> Curve was generated from obsolete geometry</label>
+            <label><input type="checkbox" value="inadequate-resolution"> Curve is inadequately resolved through the routed range</label>
+            <label><input type="checkbox" value="unsupported-subreaches"> Subreach configuration conflicts with the supplied exercise reference</label>
+          </fieldset>`;
+        drawFinalReviewCurve("qc-final-curve", QC.RESOLUTION_REVIEW.curves.B, review.operatingRangeCfs);
+        drawFinalReviewHydro("qc-final-hydro", QC.finalReviewRouting());
+        document.querySelectorAll('input[name="qc-final-decision"]').forEach((input) => input.addEventListener("change", () => {
+          const returning = input.checked && input.value === "return";
+          $("qc-final-reasons").hidden = !returning;
+          if (!returning) $("qc-final-reasons").querySelectorAll("input").forEach((reason) => { reason.checked = false; });
+        }));
+      },
+      evaluate: () => QC.evaluateFinalReview(
+        checkedValue("qc-final-decision"),
+        [...$("qc-final-reasons").querySelectorAll("input:checked")].map((input) => input.value),
+      ),
+      takeaway: "A defensible routed hydrograph begins with a defensible reach, current curve, adequate operating-range resolution, and supported discretization.",
+    },
+  ];
+
+  state.checkpointFlow = new Checkpoints.CheckpointFlow({
+    moduleId: "modified-puls",
+    checkpoints,
+    elements: {
+      number: $("checkpoint-number"), title: $("checkpoint-title"), task: $("checkpoint-task"),
+      body: $("checkpoint-body"), feedback: $("checkpoint-feedback"), checkButton: $("checkpoint-check"),
+      nextButton: $("checkpoint-next"), resetButton: $("checkpoint-reset"), progress: $("checkpoint-progress"),
+      completeMessage: $("checkpoint-complete"),
+    },
+    onUnlock: (unlocked) => {
+      $("sandbox-shell").classList.toggle("is-checkpoint-locked", !unlocked);
+      $("sandbox-lock").hidden = unlocked;
+      if (unlocked && computed && !computed.error) requestAnimationFrame(renderActive);
+    },
+    onReset: resetExplorer,
+  });
+}
+
 window.addEventListener("resize", () => {
   if (computed && !computed.error) {
     if (state.act === 1) resize("concept-plot");
@@ -351,3 +625,4 @@ readHash();
 initRail();
 initTabs();
 refresh();
+initializeCheckpoints();

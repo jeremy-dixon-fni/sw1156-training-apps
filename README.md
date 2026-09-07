@@ -12,22 +12,21 @@ The apps are intentionally lightweight Dash prototypes. Each app teaches one con
 | Alternatives Analysis Explorer | Compares stormwater alternatives by problem type, benefit, cost, and practicality. | `python apps/alternatives_analysis/app.py` |
 | TC and Lag Assumption Explorer | Shows how lag assumptions affect runoff hydrograph shape and timing. | `python apps/tc_lag/app.py` |
 | Routing Reach Representation Trainer | Shows sensitivity of Muskingum-Cunge-style routing to representative reach geometry. | `python apps/muskingum_cunge/app.py` |
-| Modified Puls Teaching Companion (web) | Static, browser-only version for GitHub Pages: a guided concept → mechanics → result walkthrough of storage-indication routing. | `python -m http.server 8060 -d apps/modified_puls_web` |
+| Modified Puls Teaching Companion (web) | Static, browser-only QC checkpoint sequence that unlocks the concept → mechanics → result routing explorer. | `python -m http.server 8060` from repo root |
 
 ## Web teaching companion (GitHub Pages)
 
 `apps/modified_puls_web/` is a static, client-side version of the Modified Puls tool built to run
-entirely in the browser and deploy to **GitHub Pages** — no Python server. It teaches storage-indication
-routing as a guided **concept → mechanics → result** walkthrough and is meant for students to follow on
-their own laptops during a presentation. It shares the Python core's math: `apps/modified_puls/app.py`
+entirely in the browser and deploy to **GitHub Pages** — no Python server. It teaches setup review through
+five QC checkpoints before unlocking the guided **concept → mechanics → result** walkthrough. It shares the Python core's math: `apps/modified_puls/app.py`
 is the reference implementation, and a Node parity test asserts the JS output against golden values
 exported from it.
 
 Run locally (static, no build step):
 
 ```bash
-python -m http.server 8060 -d apps/modified_puls_web
-# open http://127.0.0.1:8060/
+python -m http.server 8060
+# open http://127.0.0.1:8060/apps/modified_puls_web/
 ```
 
 Test JS↔Python parity:
@@ -47,7 +46,7 @@ See `apps/modified_puls_web/README.md` for the full file map and deploy notes.
 
 ## Checkpoint training sequence
 
-The static Precipitation, Losses, and Transform apps use a shared checkpoint layer before unlocking their existing exploration controls. Progress is stored in browser session state, numerical answers use engineering-appropriate absolute/percentage tolerances, and near misses receive diagnostic guidance.
+The static Precipitation, Losses, Transform, and Modified Puls apps use a shared checkpoint layer before unlocking their existing exploration controls. Progress is stored in browser session state, numerical answers use engineering-appropriate absolute/percentage tolerances, and near misses receive diagnostic guidance.
 
 Run all static source apps locally from the repository root so the shared checkpoint assets resolve:
 

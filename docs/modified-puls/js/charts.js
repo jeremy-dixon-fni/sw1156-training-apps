@@ -1,7 +1,7 @@
 // Plotly figure builders. Plotly is loaded globally from vendor/plotly.min.js (window.Plotly).
 // Each function calls Plotly.react on a target div id.
 
-import { firstClampTime } from "./routing.js?v=f67e8d01";
+import { firstClampTime } from "./routing.js?v=e0420a5e";
 
 export const FNI = {
   blue: "#015D91",
@@ -109,6 +109,98 @@ export function drawMechCurve(div, steps, k) {
     { type: "line", x0: 0, x1: row.marker.x, y0: row.marker.y, y1: row.marker.y, line: { color: FNI.green, width: 1, dash: "dot" } },
   ];
   window.Plotly.react(div, traces, lay, CONFIG);
+}
+
+/** Checkpoint 2: old and current storage-discharge curves. */
+export function drawGeometryCurveComparison(div, curves) {
+  const traces = [
+    {
+      x: curves.rev2.storageAcft, y: curves.rev2.dischargeCfs, mode: "lines+markers", name: "Rev. 2 curve",
+      line: { color: FNI.orange, width: 3 }, marker: { size: 7 },
+    },
+    {
+      x: curves.rev4.storageAcft, y: curves.rev4.dischargeCfs, mode: "lines+markers", name: "Rev. 4 curve",
+      line: { color: FNI.green, width: 3 }, marker: { size: 7 },
+    },
+  ];
+  window.Plotly.react(div, traces, layout({
+    margin: { l: 62, r: 20, t: 60, b: 50 },
+    legend: { orientation: "h", yanchor: "bottom", y: 1.08, xanchor: "left", x: 0 },
+    xaxis: { title: "Storage (acre-ft)", rangemode: "tozero" },
+    yaxis: { title: "Discharge (cfs)", rangemode: "tozero" },
+  }), CONFIG);
+}
+
+/** Checkpoint 2: routed results from old and current curves using the same inflow. */
+export function drawGeometryHydroComparison(div, comparison) {
+  const traces = [
+    { x: comparison.timeMin, y: comparison.inflowCfs, mode: "lines", name: "Inflow", line: { color: FNI.blue, width: 3 } },
+    { x: comparison.timeMin, y: comparison.oldOutflowCfs, mode: "lines", name: "Rev. 2 routed outflow", line: { color: FNI.orange, width: 3 } },
+    { x: comparison.timeMin, y: comparison.currentOutflowCfs, mode: "lines", name: "Rev. 4 routed outflow", line: { color: FNI.green, width: 3 } },
+  ];
+  window.Plotly.react(div, traces, layout({
+    margin: { l: 62, r: 20, t: 78, b: 50 },
+    legend: { orientation: "h", yanchor: "bottom", y: 1.08, xanchor: "left", x: 0 },
+    xaxis: { title: "Time (minutes)" },
+    yaxis: { title: "Flow (cfs)", rangemode: "tozero" },
+  }), CONFIG);
+}
+
+/** Checkpoint 3: compare point distribution and highlight the event's routed range. */
+export function drawResolutionComparison(div, review) {
+  const curveA = review.curves.A;
+  const curveB = review.curves.B;
+  const traces = [
+    {
+      x: curveA.storageAcft, y: curveA.dischargeCfs, mode: "lines+markers", name: curveA.label,
+      line: { color: FNI.green, width: 3 }, marker: { size: 8 },
+    },
+    {
+      x: curveB.storageAcft, y: curveB.dischargeCfs, mode: "lines+markers", name: curveB.label,
+      line: { color: FNI.orange, width: 3 }, marker: { size: 8 },
+    },
+  ];
+  const [low, high] = review.operatingRangeCfs;
+  const lay = layout({
+    margin: { l: 62, r: 20, t: 82, b: 50 },
+    legend: { orientation: "h", yanchor: "bottom", y: 1.08, xanchor: "left", x: 0 },
+    xaxis: { title: "Storage (acre-ft)", rangemode: "tozero" },
+    yaxis: { title: "Discharge (cfs)", rangemode: "tozero" },
+    shapes: [{ type: "rect", xref: "paper", x0: 0, x1: 1, y0: low, y1: high, fillcolor: "rgba(69,166,221,0.14)", line: { width: 0 }, layer: "below" }],
+    annotations: [{ xref: "paper", x: 0.99, y: high, text: `Routed range: ${low.toLocaleString()}–${high.toLocaleString()} cfs`, showarrow: false, xanchor: "right", yanchor: "bottom", font: { color: FNI.blue, size: 11 } }],
+  });
+  window.Plotly.react(div, traces, lay, CONFIG);
+}
+
+/** Checkpoint 5: the routed hydrograph included in the integrated review package. */
+export function drawFinalReviewHydro(div, result) {
+  const traces = [
+    { x: result.timeMin, y: result.inflowCfs, mode: "lines", name: "Inflow", line: { color: FNI.blue, width: 3 } },
+    { x: result.timeMin, y: result.outflowCfs, mode: "lines", name: "Assigned-curve outflow", line: { color: FNI.orange, width: 3 } },
+  ];
+  window.Plotly.react(div, traces, layout({
+    margin: { l: 62, r: 20, t: 60, b: 50 },
+    legend: { orientation: "h", yanchor: "bottom", y: 1.08, xanchor: "left", x: 0 },
+    xaxis: { title: "Time (minutes)" },
+    yaxis: { title: "Flow (cfs)", rangemode: "tozero" },
+  }), CONFIG);
+}
+
+/** Checkpoint 5: assigned curve and the routed operating range. */
+export function drawFinalReviewCurve(div, curve, operatingRangeCfs) {
+  const [low, high] = operatingRangeCfs;
+  const traces = [{
+    x: curve.storageAcft, y: curve.dischargeCfs, mode: "lines+markers", name: "Assigned curve",
+    line: { color: FNI.orange, width: 3 }, marker: { size: 8 },
+  }];
+  window.Plotly.react(div, traces, layout({
+    margin: { l: 62, r: 20, t: 50, b: 50 },
+    showlegend: false,
+    xaxis: { title: "Storage (acre-ft)", rangemode: "tozero" },
+    yaxis: { title: "Discharge (cfs)", rangemode: "tozero" },
+    shapes: [{ type: "rect", xref: "paper", x0: 0, x1: 1, y0: low, y1: high, fillcolor: "rgba(69,166,221,0.14)", line: { width: 0 }, layer: "below" }],
+    annotations: [{ xref: "paper", x: 0.99, y: high, text: `${low.toLocaleString()}–${high.toLocaleString()} cfs operating range`, showarrow: false, xanchor: "right", yanchor: "bottom", font: { color: FNI.blue, size: 11 } }],
+  }), CONFIG);
 }
 
 export function resize(div) {

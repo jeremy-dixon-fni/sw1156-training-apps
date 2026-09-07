@@ -10,7 +10,7 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
-  const BUILD_VERSION = "1.2.0";
+  const BUILD_VERSION = "1.3.0";
 
   const COLORS = Object.freeze({
     FNI_BLUE: "#015D91",
@@ -128,6 +128,58 @@
 
   function assertFinitePositive(value, label) {
     if (!Number.isFinite(value) || value <= 0) throw new Error(`${label} must be positive.`);
+  }
+
+  function parseCsvRows(text) {
+    const source = String(text == null ? "" : text).replace(/^\uFEFF/, "");
+    const rows = [];
+    let row = [];
+    let field = "";
+    let inQuotes = false;
+    for (let i = 0; i < source.length; i += 1) {
+      const char = source[i];
+      if (inQuotes) {
+        if (char === '"') {
+          if (source[i + 1] === '"') { field += '"'; i += 1; }
+          else inQuotes = false;
+        } else field += char;
+      } else if (char === '"') inQuotes = true;
+      else if (char === ",") { row.push(field); field = ""; }
+      else if (char === "\n") { row.push(field.replace(/\r$/, "")); rows.push(row); row = []; field = ""; }
+      else field += char;
+    }
+    if (field.length || row.length) { row.push(field.replace(/\r$/, "")); rows.push(row); }
+    return rows;
+  }
+
+  function parseAtlasDurationMinutes(label) {
+    const match = String(label || "").trim().toLowerCase().replace(/:/g, "")
+      .match(/^([0-9]*\.?[0-9]+)\s*-?\s*(min|minute|minutes|hr|hour|hours|day|days)$/);
+    if (!match) return null;
+    const value = Number(match[1]);
+    if (match[2].startsWith("min")) return value;
+    if (["hr", "hour", "hours"].includes(match[2])) return value * 60;
+    return value * 24 * 60;
+  }
+
+  function parseAtlasP2Depth(text) {
+    const rows = parseCsvRows(text);
+    const clean = value => String(value == null ? "" : value).replace(/^\uFEFF/, "").trim();
+    const headerIndex = rows.findIndex(row => clean(row[0]).toLowerCase().startsWith("by duration for ari"));
+    if (headerIndex < 0) throw new Error("Could not find the Atlas 14 ARI header row.");
+    const ariIndex = rows[headerIndex].slice(1).findIndex(value => Math.abs(Number(clean(value)) - 2) < 1e-9);
+    if (ariIndex < 0) throw new Error("The Atlas 14 table does not include a 2-year column.");
+    const dataTypeText = rows
+      .filter(row => clean(row[0]).toLowerCase().startsWith("data type:"))
+      .map(row => row.map(clean).join(" "))
+      .join(" ")
+      .toLowerCase();
+    const sourceIsIntensity = dataTypeText.includes("intensity") || dataTypeText.includes("inches/hour");
+    const durationRow = rows.slice(headerIndex + 1).find(row => Math.abs((parseAtlasDurationMinutes(clean(row[0])) || 0) - 1440) < 1e-9);
+    if (!durationRow) throw new Error("The Atlas 14 table does not include a 24-hour duration row.");
+    const suppliedValue = Number(clean(durationRow[ariIndex + 1]));
+    if (!Number.isFinite(suppliedValue) || suppliedValue <= 0) throw new Error("The 2-year, 24-hour value is missing or invalid.");
+    return sourceIsIntensity ? suppliedValue * 24 : suppliedValue;
   }
 
   function overallSlope(path) {
@@ -525,6 +577,7 @@
     DEFAULT_SHALLOW_SURFACE_KEYS,
     DEFAULT_KERBY_SURFACE_KEYS,
     FLOW_PATHS,
+    parseAtlasP2Depth,
     overallSlope,
     validateFlowPaths,
     calculateSheetTimeMin,

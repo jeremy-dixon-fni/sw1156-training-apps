@@ -1,6 +1,6 @@
-# Transform Flow Path Explorer - Static JavaScript Port v1.2
+# Transform Flow Path Explorer - Static JavaScript Port v1.3
 
-This build removes the ambiguous `root` runtime identifier from the application code and adds cache-busting version parameters to all browser assets. The status panel displays `Static build 1.2.0` so deployment can be verified directly in the page.
+The status panel displays `Static build 1.3.0` so deployment can be verified directly in the page. The checkpoint flow supports optional Atlas 14 CSV verification and uses terrain-backed QC maps with subcatchment delineations.
 
 # Transform Flow Path Explorer - Static JavaScript Port
 
@@ -17,6 +17,8 @@ apps/transform_web/
   js/app.js
   vendor/plotly.min.js
   assets/flow_paths_map.png
+  assets/checkpoint-flow-path-qc.webp
+  assets/checkpoint-surface-qc.webp
   tests/model.test.js
 ```
 
@@ -63,7 +65,8 @@ The regression checks cover:
 - default Kerby-Kirpich results
 - NRCS gamma unit-hydrograph calculations
 - lag-ratio and peak-rate-factor sensitivity envelope
+- Atlas 14 depth/intensity CSV parsing for the 2-year, 24-hour depth
 
 ## Deployment
 
-The app uses relative paths and is compatible with GitHub Pages. Copy or commit the complete `apps/transform_web/` directory, including the local Plotly vendor file and map asset.
+The app uses relative paths and is compatible with GitHub Pages. Copy or commit the complete `apps/transform_web/` directory, including the local Plotly vendor file and map assets.

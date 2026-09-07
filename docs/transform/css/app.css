@@ -87,78 +87,38 @@ h3 { margin: 0 0 10px; font-size: 1rem; }
   gap: 14px;
 }
 
-.qc-plan {
-  position: relative;
-  min-height: 190px;
+.qc-map-figure {
   margin: 14px 0;
   overflow: hidden;
-  background: linear-gradient(135deg, #d9efcf 0 48%, #c4c8cb 48% 100%);
   border: 2px solid #93afb4;
   border-radius: 10px;
+  background: #eef3ef;
 }
 
-.qc-building {
-  position: absolute;
-  top: 45px;
-  left: 42%;
-  width: 155px;
-  height: 95px;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  background: #4d4d4f;
-  border: 5px solid #fff;
-  font-weight: 700;
+.qc-map-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
 }
 
-.qc-flow-line {
-  position: absolute;
-  top: 90px;
-  left: 8%;
-  width: 78%;
-  height: 8px;
-  background: #015d91;
-  transform: rotate(-4deg);
+.qc-file-label {
+  margin-top: 8px;
 }
 
-.qc-flow-line::after {
-  position: absolute;
-  right: -3px;
-  top: -8px;
-  content: "";
-  border-top: 12px solid transparent;
-  border-bottom: 12px solid transparent;
-  border-left: 18px solid #015d91;
+.qc-answer input[type="file"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px dashed var(--fni-neutral-blue);
+  border-radius: 7px;
+  background: #f8fbfc;
 }
 
-.surface-plan {
-  min-height: 150px;
-  background: linear-gradient(90deg, #c4c8cb 0 48%, #8fc66c 48% 100%);
-}
-
-.surface-plan::before {
-  position: absolute;
-  top: 10px;
-  left: 12%;
-  content: "PAVEMENT";
-  color: #4d4d4f;
-  font-weight: 700;
-}
-
-.surface-plan::after {
-  position: absolute;
-  top: 10px;
-  right: 17%;
-  content: "GRASS";
-  color: #244414;
-  font-weight: 700;
-}
-
-.surface-plan .qc-flow-line {
-  top: 80px;
-  left: 53%;
-  width: 38%;
-  transform: rotate(5deg);
+.qc-file-status {
+  margin: 0;
+  color: var(--fni-dark-gray);
+  font-size: 0.9rem;
 }
 
 .surface-comparison {

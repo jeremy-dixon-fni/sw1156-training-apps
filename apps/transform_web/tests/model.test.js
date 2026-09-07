@@ -14,6 +14,22 @@ assert.equal(Model.EXCESS_TIMESTEP_MIN, 5);
 assert.equal(Model.DRAINAGE_AREA_SQMI, 21.4656);
 assert.equal(Model.REMOVED_COMMON_CHANNEL_LENGTH_FT, 43153.667588);
 
+const atlasDepthCsv = [
+  "Data type: precipitation depth (inches),",
+  "By duration for ARI (years):,1,2,5",
+  "12-hr:,2.10,2.80,3.40",
+  "24-hr:,2.90,3.95,4.80"
+].join("\n");
+assert.ok(Math.abs(Model.parseAtlasP2Depth(atlasDepthCsv) - 3.95) < 1e-12);
+
+const atlasIntensityCsv = [
+  "Data type: precipitation intensity (inches/hour),",
+  "By duration for ARI (years):,1,2,5",
+  "1-day:,0.12,0.165,0.20"
+].join("\n");
+assert.ok(Math.abs(Model.parseAtlasP2Depth(atlasIntensityCsv) - 3.96) < 1e-12);
+assert.throws(() => Model.parseAtlasP2Depth("not an Atlas table"), /ARI header row/);
+
 const expectedLengths = {
   1: [52576.254423, 49999.812686],
   2: [42625.602916, 37948.418313],

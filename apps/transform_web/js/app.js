@@ -12,7 +12,18 @@
     return Number.isFinite(value) && value > 0 ? value : 3.95;
   }
 
-  const state = { method: "tr55", updateTimer: null, verifiedP2: Model.P2_24HR_IN, checkpointFlow: null };
+  const state = {
+    method: "tr55",
+    updateTimer: null,
+    verifiedP2: Model.P2_24HR_IN,
+    checkpointFlow: null,
+    checkpointP2Upload: null
+  };
+
+  const SURFACE_QC_RESULTS = Object.freeze({
+    pavement: Object.freeze({ tcMin: 6.8, peakCfs: 19 }),
+    grass: Object.freeze({ tcMin: 12.4, peakCfs: 14 })
+  });
 
   const byId = id => document.getElementById(id);
   const format0 = value => Number(value).toLocaleString("en-US", { maximumFractionDigits: 0 });
@@ -426,64 +437,95 @@
     });
   }
 
-  function surfaceCase(surfaceKey) {
-    const results = Model.calculateMethodResults({
-      method: "tr55",
-      sheetLimitFt: 100,
-      shallowLimitFt: 2000,
-      channelVelocityFps: 6,
-      p2_24hrIn: carriedP2Depth(),
-      sheetSurfaceKeys: { 1: surfaceKey }
-    });
-    return Model.addHydrographMetrics(results).find(item => item.pathId === 1);
+  function checkpointP2Source(carriedDepth) {
+    const upload = state.checkpointP2Upload;
+    if (!upload) return { depthIn: carriedDepth, label: "the value carried from the Precipitation module" };
+    if (upload.status === "reading") return { error: "Wait for the selected CSV to finish loading." };
+    if (upload.status === "error") return { error: `The uploaded CSV could not be used: ${upload.message}` };
+    return { depthIn: upload.depthIn, label: `the uploaded CSV (${upload.filename})` };
+  }
+
+  async function readCheckpointAtlasFile(file, status) {
+    if (!file) {
+      state.checkpointP2Upload = null;
+      status.textContent = "No CSV selected. The answer will be checked against the value carried from the Precipitation module.";
+      return;
+    }
+    state.checkpointP2Upload = { status: "reading", filename: file.name };
+    status.textContent = `Reading ${file.name}...`;
+    try {
+      const depthIn = Model.parseAtlasP2Depth(await file.text());
+      state.checkpointP2Upload = { status: "ready", filename: file.name, depthIn };
+      status.textContent = `Selected: ${file.name}. The answer will be checked against this CSV.`;
+    } catch (error) {
+      state.checkpointP2Upload = { status: "error", filename: file.name, message: error.message };
+      status.textContent = `Could not use ${file.name}: ${error.message}`;
+    }
   }
 
   function initializeCheckpoints() {
     const correctP2 = carriedP2Depth();
-    const pavement = surfaceCase("smooth");
-    const grass = surfaceCase("short_grass");
+    const pavement = SURFACE_QC_RESULTS.pavement;
+    const grass = SURFACE_QC_RESULTS.grass;
     const checkpoints = [
       {
         id: "stale-p2",
         title: "QC the inherited rainfall depth",
-        task: `The supplied Tc worksheet uses ${Model.P2_24HR_IN.toFixed(2)} inches for the 2-year, 24-hour depth. Replace it with the value verified in the Precipitation module.`,
+        task: `The supplied Tc worksheet uses ${Model.P2_24HR_IN.toFixed(2)} inches for the 2-year, 24-hour depth. Enter the verified value. Optionally upload the Atlas 14 CSV again; if provided, your answer will be checked against the CSV. Otherwise, it will be checked against the value carried from the Precipitation module.`,
         render: body => {
           body.className = "checkpoint-body qc-answer";
-          body.innerHTML = `<label for="qc-p2-depth"><strong>Verified 2-year, 24-hour depth (in)</strong></label><input id="qc-p2-depth" type="number" step="0.01" inputmode="decimal">`;
+          body.innerHTML = `
+            <label for="qc-p2-depth"><strong>Verified 2-year, 24-hour depth (in)</strong></label>
+            <input id="qc-p2-depth" type="number" step="0.01" inputmode="decimal">
+            <label class="qc-file-label" for="qc-atlas-file"><strong>Optional Atlas 14 CSV</strong></label>
+            <input id="qc-atlas-file" type="file" accept=".csv,text/csv">
+            <p id="qc-atlas-status" class="qc-file-status">No CSV selected. The answer will be checked against the value carried from the Precipitation module.</p>`;
+          const fileInput = byId("qc-atlas-file");
+          const fileStatus = byId("qc-atlas-status");
+          fileInput.addEventListener("change", () => readCheckpointAtlasFile(fileInput.files && fileInput.files[0], fileStatus));
         },
         evaluate: () => {
-          const evaluation = Checkpoints.evaluateNumeric(byId("qc-p2-depth").value, correctP2, { absolute: 0.03, percent: 2, closeMultiplier: 3 });
+          const source = checkpointP2Source(correctP2);
+          if (source.error) return { status: Checkpoints.RESULT.INVALID, message: source.error };
+          const evaluation = Checkpoints.evaluateNumeric(byId("qc-p2-depth").value, source.depthIn, { absolute: 0.03, percent: 2, closeMultiplier: 3 });
           if (evaluation.status === Checkpoints.RESULT.ACCEPTABLE) {
-            state.verifiedP2 = correctP2;
+            state.verifiedP2 = source.depthIn;
             update();
-            return { status: evaluation.status, storedResult: { depthIn: correctP2 }, message: "Correct. The inherited rainfall depth has been replaced with the location-specific value carried from the Precipitation lesson. Never assume a spreadsheet default is current." };
+            return { status: evaluation.status, storedResult: { depthIn: source.depthIn }, message: `Correct. The inherited rainfall depth has been replaced with the location-specific value from ${source.label}. Never assume a spreadsheet default is current.` };
           }
           if (evaluation.status === Checkpoints.RESULT.CLOSE) return { status: evaluation.status, message: "Close. Use the value you verified for the same location, series, duration, and units." };
-          return { status: evaluation.status, message: "That does not match the carried 2-year, 24-hour depth. Recheck the Precipitation result rather than trusting the worksheet default." };
+          return { status: evaluation.status, message: `That does not match the 2-year, 24-hour depth from ${source.label}.` };
         },
         takeaway: "Inherited spreadsheet values are inputs to be verified, not facts."
       },
       {
         id: "flow-path-qc",
         title: "Review the physical flow path",
-        task: "Would you accept this mapped Tc flow path, and what is the controlling QC issue?",
+        task: "Would you accept this mapped Tc flow path? If not, what is the controlling QC issue?",
         render: body => {
           body.className = "checkpoint-body qc-answer";
           body.innerHTML = `
-            <div class="qc-plan" role="img" aria-label="Mapped flow path crossing directly through a building footprint">
-              <div class="qc-flow-line"></div><div class="qc-building">BUILDING</div>
-            </div>
+            <figure class="qc-map-figure"><img class="qc-map-image" src="assets/checkpoint-flow-path-qc.webp" alt="Terrain map with an outlined subcatchment and a mapped flow path crossing directly through a building footprint"></figure>
             <div class="qc-choice-row">
               <label><input type="radio" name="flow-accept" value="accept"> Accept</label>
               <label><input type="radio" name="flow-accept" value="reject"> Reject</label>
             </div>
-            <label for="flow-reason"><strong>Primary reason</strong></label>
-            <select id="flow-reason">
-              <option value="">Select a reason</option>
-              <option value="longest">It is not the geometrically longest possible line</option>
-              <option value="building">The assumed runoff route passes through a building and is not physically continuous</option>
-              <option value="color">The mapped line color is difficult to see</option>
-            </select>`;
+            <div id="flow-reason-group" hidden>
+              <label for="flow-reason"><strong>Controlling QC issue</strong></label>
+              <select id="flow-reason">
+                <option value="">Select an issue</option>
+                <option value="longest">It is not the geometrically longest possible line</option>
+                <option value="building">The assumed runoff route passes through a building and is not physically continuous</option>
+                <option value="color">The mapped line color is difficult to see</option>
+              </select>
+            </div>`;
+          const reasonGroup = byId("flow-reason-group");
+          const reason = byId("flow-reason");
+          document.querySelectorAll('input[name="flow-accept"]').forEach(input => input.addEventListener("change", () => {
+            const rejecting = input.value === "reject" && input.checked;
+            reasonGroup.hidden = !rejecting;
+            if (!rejecting) reason.value = "";
+          }));
         },
         evaluate: () => {
           const choice = document.querySelector('input[name="flow-accept"]:checked');
@@ -491,8 +533,9 @@
           if (choice && choice.value === "reject" && reason === "building") {
             return { status: Checkpoints.RESULT.ACCEPTABLE, message: "Correct. A Tc path represents actual travel from the temporally most remote contributing point. Water cannot follow the assumed surface route through a building, so the analysis is physically inconsistent." };
           }
-          if (!choice || !reason) return { status: Checkpoints.RESULT.INVALID, message: "Choose accept or reject and identify the controlling reason." };
+          if (!choice) return { status: Checkpoints.RESULT.INVALID, message: "Choose whether to accept or reject the mapped flow path." };
           if (choice.value === "accept") return { status: Checkpoints.RESULT.INCORRECT, message: "Reconsider whether a drop of water could physically travel along every segment of the mapped line." };
+          if (!reason) return { status: Checkpoints.RESULT.INVALID, message: "Select the controlling QC issue for rejecting the mapped flow path." };
           return { status: Checkpoints.RESULT.INCORRECT, message: "Rejecting it is appropriate, but focus on physical continuity—not whether it is the longest line or how it is drawn." };
         },
         takeaway: "The controlling path is the hydraulically most remote defensible route, not merely the longest line on a map."
@@ -500,22 +543,22 @@
       {
         id: "surface-qc",
         title: "Classify the sheet-flow surface",
-        task: "The mapped start point and arrow lie on the grass side of the visible boundary. Select the defensible sheet-flow surface and review the modeled consequence.",
+        task: "The short mapped sheet-flow path lies on the grass side of the visible pavement boundary. Select the defensible surface and review the local subcatchment consequence.",
         render: body => {
           body.className = "checkpoint-body qc-answer";
           body.innerHTML = `
-            <div class="qc-plan surface-plan" role="img" aria-label="Sheet-flow path beginning just inside grass next to a pavement boundary"><div class="qc-flow-line"></div></div>
+            <figure class="qc-map-figure"><img class="qc-map-image" src="assets/checkpoint-surface-qc.webp" alt="Terrain map with an outlined subcatchment and a short sheet-flow path entirely on grass beside a pavement boundary"></figure>
             <label for="surface-choice"><strong>Defensible classification</strong></label>
             <select id="surface-choice"><option value="">Select surface</option><option value="smooth">Pavement / smooth surface</option><option value="short_grass">Short grass</option></select>
-            <table class="surface-comparison"><thead><tr><th>Assumption</th><th>Path 1 Tc</th><th>Modeled peak</th></tr></thead><tbody>
-              <tr><td>Pavement / smooth</td><td>${format1(pavement.totalTimeMin)} min</td><td>${format0(pavement.peakFlowCfs)} cfs</td></tr>
-              <tr><td>Short grass</td><td>${format1(grass.totalTimeMin)} min</td><td>${format0(grass.peakFlowCfs)} cfs</td></tr>
+            <table class="surface-comparison"><thead><tr><th>Assumption</th><th>Local Tc</th><th>Modeled peak</th></tr></thead><tbody>
+              <tr><td>Pavement / smooth</td><td>${format1(pavement.tcMin)} min</td><td>${format0(pavement.peakCfs)} cfs</td></tr>
+              <tr><td>Short grass</td><td>${format1(grass.tcMin)} min</td><td>${format0(grass.peakCfs)} cfs</td></tr>
             </tbody></table>`;
         },
         evaluate: () => {
           const choice = byId("surface-choice").value;
           if (choice === "short_grass") {
-            return { status: Checkpoints.RESULT.ACCEPTABLE, message: `Correct. The imagery supports grass. That small spatial shift changes roughness, increasing Path 1 Tc from ${format1(pavement.totalTimeMin)} to ${format1(grass.totalTimeMin)} minutes and changing the modeled peak from ${format0(pavement.peakFlowCfs)} to ${format0(grass.peakFlowCfs)} cfs.` };
+            return { status: Checkpoints.RESULT.ACCEPTABLE, message: `Correct. The imagery supports grass. For this local subcatchment, the rougher surface increases Tc from ${format1(pavement.tcMin)} to ${format1(grass.tcMin)} minutes and reduces the modeled peak from ${format0(pavement.peakCfs)} to ${format0(grass.peakCfs)} cfs.` };
           }
           if (!choice) return { status: Checkpoints.RESULT.INVALID, message: "Select the surface supported by the mapped start point." };
           return { status: Checkpoints.RESULT.INCORRECT, message: "The arrow begins to the right of the boundary, within the grass. Classify the surface actually traversed, even when a nearby pavement interpretation is tempting." };
@@ -533,16 +576,18 @@
         nextButton: byId("checkpoint-next"), resetButton: byId("checkpoint-reset"), progress: byId("checkpoint-progress"),
         completeMessage: byId("checkpoint-complete")
       },
-      onUnlock: unlocked => {
+      onUnlock: (unlocked, snapshot) => {
         ["sandbox-tabs", "sandbox-main", "sandbox-map", "sandbox-notes"].forEach(id => byId(id).classList.toggle("is-checkpoint-locked", !unlocked));
         byId("sandbox-lock").hidden = unlocked;
+        const verified = snapshot.results["stale-p2"] && Number(snapshot.results["stale-p2"].depthIn);
+        if (Number.isFinite(verified) && verified > 0) state.verifiedP2 = verified;
         if (unlocked) {
-          state.verifiedP2 = correctP2;
           update();
         }
       },
       onReset: () => {
         state.verifiedP2 = Model.P2_24HR_IN;
+        state.checkpointP2Upload = null;
         update();
       }
     });

@@ -11,15 +11,6 @@
   const TOTAL_RAINFALL_IN = 10.0;
   const DT_HR = 0.25;
   const STORM_DURATION_HR = 24.0;
-  const CHECKPOINT_TARGETS = Object.freeze([
-    Object.freeze({ targetPct: 5.0, targetTimeHr: 10.0 }),
-    Object.freeze({ targetPct: 15.0, targetTimeHr: 11.0 }),
-    Object.freeze({ targetPct: 30.0, targetTimeHr: 12.0 }),
-    Object.freeze({ targetPct: 45.0, targetTimeHr: 13.0 }),
-    Object.freeze({ targetPct: 60.0, targetTimeHr: 15.0 }),
-  ]);
-  const FINAL_TARGET_PCT = 74.0;
-  const FINAL_TARGET_TIME_HR = 24.0;
 
   function clamp(value, minimum, maximum) {
     return Math.min(Math.max(value, minimum), maximum);
@@ -163,32 +154,6 @@
     return result.cumulativeRunoffIn.map((value) => (value / TOTAL_RAINFALL_IN) * 100.0);
   }
 
-  function makeGoalRows(result) {
-    const runoffPct = cumulativeRunoffPercent(result);
-    const rows = CHECKPOINT_TARGETS.map((target) => {
-      const currentTimeHr = firstCrossingTime(result.timeHr, runoffPct, target.targetPct);
-      return {
-        kind: "checkpoint",
-        targetPct: target.targetPct,
-        targetTimeHr: target.targetTimeHr,
-        currentTimeHr,
-        miss: currentTimeHr === null ? null : currentTimeHr - target.targetTimeHr,
-        missUnit: "hr",
-      };
-    });
-
-    const finalRunoffPct = runoffPct[runoffPct.length - 1];
-    rows.push({
-      kind: "final",
-      targetPct: FINAL_TARGET_PCT,
-      targetTimeHr: FINAL_TARGET_TIME_HR,
-      currentTimeHr: FINAL_TARGET_TIME_HR,
-      miss: finalRunoffPct - FINAL_TARGET_PCT,
-      missUnit: "%-pt",
-    });
-    return rows;
-  }
-
   function summarizeResult(result) {
     const finalRunoffIn = result.cumulativeRunoffIn[result.cumulativeRunoffIn.length - 1];
     const totalLossIn = result.cumulativeTotalLossIn[result.cumulativeTotalLossIn.length - 1];
@@ -212,15 +177,11 @@
     TOTAL_RAINFALL_IN,
     DT_HR,
     STORM_DURATION_HR,
-    CHECKPOINT_TARGETS,
-    FINAL_TARGET_PCT,
-    FINAL_TARGET_TIME_HR,
     cumulativeSum,
     makeTrainingHyetograph,
     computeInitialConstantLosses,
     firstCrossingTime,
     cumulativeRunoffPercent,
-    makeGoalRows,
     summarizeResult,
   });
 });

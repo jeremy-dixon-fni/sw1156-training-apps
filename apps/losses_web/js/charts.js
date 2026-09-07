@@ -35,7 +35,7 @@
       legend: {
         orientation: "h",
         yanchor: "bottom",
-        y: 1.02,
+        y: 1.14,
         xanchor: "right",
         x: 1,
       },
@@ -99,13 +99,11 @@
     return Plotly.react(element, traces, layout, PLOT_CONFIG);
   }
 
-  function renderCumulativePlot(element, result) {
+  function renderCumulativePlot(element, result, targets) {
     requirePlotly();
     const percent = (values) => values.map((value) => (value / Model.TOTAL_RAINFALL_IN) * 100.0);
-    const targetPoints = [
-      ...Model.CHECKPOINT_TARGETS,
-      { targetPct: Model.FINAL_TARGET_PCT, targetTimeHr: Model.FINAL_TARGET_TIME_HR },
-    ];
+    const runoffTargets = (targets || []).filter((target) => target.series === "runoff");
+    const lossTargets = (targets || []).filter((target) => target.series === "loss");
 
     const traces = [
       {
@@ -155,30 +153,44 @@
         visible: "legendonly",
         hovertemplate: "Time: %{x:.2f} hr<br>Constant loss: %{y:.1f}%<extra></extra>",
       },
-      {
+      ...(runoffTargets.length ? [{
         type: "scatter",
-        mode: "markers+text",
-        x: targetPoints.map((point) => point.targetTimeHr),
-        y: targetPoints.map((point) => point.targetPct),
-        text: targetPoints.map((point) => `${point.targetPct.toFixed(0)}%`),
-        textposition: "top center",
-        name: "Runoff targets",
+        mode: "markers",
+        x: runoffTargets.map((target) => target.timeHr),
+        y: runoffTargets.map((target) => target.percent),
+        text: runoffTargets.map((target) => target.label),
+        name: "Runoff checkpoint targets",
+        marker: {
+          color: COLORS.green,
+          size: 11,
+          symbol: "circle-open",
+          line: { width: 2 },
+        },
+        hovertemplate: "%{text}<br>Runoff target: %{y:.1f}%<br>Time: %{x:.2f} hr<extra></extra>",
+      }] : []),
+      ...(lossTargets.length ? [{
+        type: "scatter",
+        mode: "markers",
+        x: lossTargets.map((target) => target.timeHr),
+        y: lossTargets.map((target) => target.percent),
+        text: lossTargets.map((target) => target.label),
+        name: "Loss checkpoint target",
         marker: {
           color: COLORS.orange,
           size: 11,
-          symbol: "x",
+          symbol: "diamond-open",
           line: { width: 2 },
         },
-        hovertemplate: "Target: %{y:.0f}% runoff<br>Time: %{x:.0f} hr<extra></extra>",
-      },
+        hovertemplate: "%{text}<br>Loss target: %{y:.1f}%<br>Time: %{x:.2f} hr<extra></extra>",
+      }] : []),
     ];
 
     const layout = {
       ...commonLayout(),
-      title: { text: "Cumulative Rainfall, Runoff, Losses, and Targets", x: 0.02, xanchor: "left" },
-      xaxis: { title: "Time (hr)", range: [0, Model.STORM_DURATION_HR + Model.DT_HR] },
+      title: { text: "Cumulative Depths and Checkpoint Targets", x: 0.02, xanchor: "left", y: 0.98 },
+      xaxis: { title: "Time (hr)", range: [0, Model.STORM_DURATION_HR + 1] },
       yaxis: { title: "Cumulative depth (% of 10-inch storm)", range: [0, 105] },
-      margin: { l: 68, r: 25, t: 82, b: 58 },
+      margin: { l: 68, r: 25, t: 118, b: 58 },
       autosize: true,
     };
 

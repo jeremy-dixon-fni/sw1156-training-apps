@@ -252,8 +252,8 @@ input[type="range"] {
   background: #f8fbfc;
 }
 
-.goal-table tbody tr.goal-final {
-  background: var(--light-green);
+.goal-table tbody tr.goal-active {
+  background: var(--light-blue);
   font-weight: 700;
 }
 

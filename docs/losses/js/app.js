@@ -45,6 +45,13 @@
     return `${sign}${value.toFixed(digits)} ${unit}`;
   }
 
+  function evaluateTrackerValue(actual, target, tolerance) {
+    if (actual === null) {
+      return { difference: null, isHit: false };
+    }
+    return { difference: actual - target, isHit: Math.abs(actual - target) <= tolerance };
+  }
+
   function setMetric(container, title, value, subtitle) {
     container.querySelector(".metric-title").textContent = title;
     container.querySelector(".metric-value").textContent = value;
@@ -189,32 +196,111 @@
     });
   }
 
+  function makeCheckpointTargets(result, summary) {
+    const combinedTime50Hr = Model.firstCrossingTime(result.timeHr, Model.cumulativeRunoffPercent(result), 50);
+    const rows = [
+      {
+        checkpointId: "initial-loss",
+        label: "Initial loss",
+        targetText: `${TARGETS.initial.toFixed(2)} in final runoff`,
+        currentText: `${summary.finalRunoffIn.toFixed(2)} in`,
+        differenceUnit: "in",
+        decimals: 2,
+        ...evaluateTrackerValue(summary.finalRunoffIn, TARGETS.initial, 0.10),
+      },
+      {
+        checkpointId: "constant-loss",
+        label: "Constant loss",
+        targetText: `${TARGETS.constant.toFixed(2)} in final runoff`,
+        currentText: `${summary.finalRunoffIn.toFixed(2)} in`,
+        differenceUnit: "in",
+        decimals: 2,
+        ...evaluateTrackerValue(summary.finalRunoffIn, TARGETS.constant, 0.10),
+      },
+      {
+        checkpointId: "impervious",
+        label: "Impervious area",
+        targetText: `${TARGETS.impervious.toFixed(2)} in total loss`,
+        currentText: `${summary.totalLossIn.toFixed(2)} in`,
+        differenceUnit: "in",
+        decimals: 2,
+        ...evaluateTrackerValue(summary.totalLossIn, TARGETS.impervious, 0.10),
+      },
+      {
+        checkpointId: "combined",
+        label: "Combined volume",
+        targetText: `${TARGETS.combined.summary.finalRunoffIn.toFixed(2)} in final runoff`,
+        currentText: `${summary.finalRunoffIn.toFixed(2)} in`,
+        differenceUnit: "in",
+        decimals: 2,
+        ...evaluateTrackerValue(summary.finalRunoffIn, TARGETS.combined.summary.finalRunoffIn, 0.12),
+      },
+      {
+        checkpointId: "combined",
+        label: "Combined timing",
+        targetText: `50% runoff at ${TARGETS.combined.time50Hr.toFixed(2)} hr`,
+        currentText: combinedTime50Hr === null ? "Not reached" : `${combinedTime50Hr.toFixed(2)} hr`,
+        differenceUnit: "hr",
+        decimals: 2,
+        ...evaluateTrackerValue(combinedTime50Hr, TARGETS.combined.time50Hr, 0.30),
+      },
+    ];
+
+    const chartTargets = [
+      {
+        series: "runoff",
+        label: "Initial loss target",
+        timeHr: Model.STORM_DURATION_HR,
+        percent: (TARGETS.initial / Model.TOTAL_RAINFALL_IN) * 100.0,
+      },
+      {
+        series: "runoff",
+        label: "Constant loss target",
+        timeHr: Model.STORM_DURATION_HR - 0.45,
+        percent: (TARGETS.constant / Model.TOTAL_RAINFALL_IN) * 100.0,
+      },
+      {
+        series: "loss",
+        label: "Impervious loss target",
+        timeHr: Model.STORM_DURATION_HR,
+        percent: (TARGETS.impervious / Model.TOTAL_RAINFALL_IN) * 100.0,
+      },
+      {
+        series: "runoff",
+        label: "Combined volume target",
+        timeHr: Model.STORM_DURATION_HR - 0.90,
+        percent: (TARGETS.combined.summary.finalRunoffIn / Model.TOTAL_RAINFALL_IN) * 100.0,
+      },
+      {
+        series: "runoff",
+        label: "Combined timing target",
+        timeHr: TARGETS.combined.time50Hr,
+        percent: 50.0,
+      },
+    ];
+
+    return { rows, chartTargets };
+  }
+
   function renderGoalTable(rows) {
     elements.goalTableBody.replaceChildren();
+    const activeCheckpointId = checkpointFlow ? checkpointFlow.current().id : "";
 
     rows.forEach((row) => {
       const tr = document.createElement("tr");
-      const tolerance = row.kind === "final" ? 0.5 : 0.25;
-      const isHit = row.miss !== null && Math.abs(row.miss) <= tolerance;
-      tr.classList.toggle("goal-final", row.kind === "final");
-      tr.classList.toggle("goal-hit", isHit);
-      tr.classList.toggle("goal-miss", row.miss !== null && !isHit);
+      tr.classList.toggle("goal-active", row.checkpointId === activeCheckpointId);
+      tr.classList.toggle("goal-hit", row.difference !== null && row.isHit);
+      tr.classList.toggle("goal-miss", row.difference !== null && !row.isHit);
 
-      const targetText = row.kind === "final"
-        ? `${row.targetPct.toFixed(0)}% final runoff`
-        : `${row.targetPct.toFixed(0)}% runoff`;
-      const currentTimeText = row.currentTimeHr === null
-        ? "Not reached"
-        : `${row.currentTimeHr.toFixed(row.kind === "final" ? 0 : 2)} hr`;
-      const missText = row.miss === null
+      const differenceText = row.difference === null
         ? "--"
-        : formatSigned(row.miss, 2, row.missUnit);
+        : formatSigned(row.difference, row.decimals, row.differenceUnit);
 
       [
-        targetText,
-        `${row.targetTimeHr.toFixed(0)} hr`,
-        currentTimeText,
-        missText,
+        row.label,
+        row.targetText,
+        row.currentText,
+        differenceText,
       ].forEach((text) => {
         const td = document.createElement("td");
         td.textContent = text;
@@ -265,8 +351,9 @@
       `${summary.imperviousRunoffIn.toFixed(2)} in bypassed losses`
     );
 
-    renderGoalTable(Model.makeGoalRows(result));
-    Charts.renderCumulativePlot(elements.cumulativePlot, result);
+    const targets = makeCheckpointTargets(result, summary);
+    renderGoalTable(targets.rows);
+    Charts.renderCumulativePlot(elements.cumulativePlot, result, targets.chartTargets);
     Charts.renderIncrementalPlot(elements.incrementalPlot, result);
   }
 

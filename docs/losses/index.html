@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Interactive training app for initial and constant hydrologic loss calculations.">
   <title>Hydrologic Losses Explorer</title>
-  <link rel="stylesheet" href="css/app.css?v=836459fe">
-  <link rel="stylesheet" href="../shared/css/checkpoints.css?v=836459fe">
+  <link rel="stylesheet" href="css/app.css?v=dc2dea6d">
+  <link rel="stylesheet" href="../shared/css/checkpoints.css?v=dc2dea6d">
 </head>
 <body>
   <main class="app-shell">
@@ -93,19 +93,19 @@
           </article>
 
           <article class="card goal-card">
-            <h2>Runoff Target Tracker</h2>
+            <h2>Checkpoint Target Tracker</h2>
             <p class="goal-note">
-              Checkpoint miss is measured in hours. Final-runoff miss is measured in percentage points.
-              Green miss values are within ±0.25 hr or ±0.5 percentage point.
+              Tracks the same runoff, total-loss, and timing targets used by the checkpoint exercises.
+              The active checkpoint is highlighted.
             </p>
             <div class="table-wrap">
               <table class="goal-table">
                 <thead>
                   <tr>
+                    <th scope="col">Checkpoint</th>
                     <th scope="col">Target</th>
-                    <th scope="col">Target Time</th>
-                    <th scope="col">Current Time</th>
-                    <th scope="col">Miss</th>
+                    <th scope="col">Current</th>
+                    <th scope="col">Difference</th>
                   </tr>
                 </thead>
                 <tbody id="goal-table-body"></tbody>
@@ -149,10 +149,10 @@
     </div>
   </main>
 
-  <script src="vendor/plotly.min.js?v=836459fe"></script>
-  <script src="js/model.js?v=836459fe"></script>
-  <script src="js/charts.js?v=836459fe"></script>
-  <script src="../shared/js/checkpoints.js?v=836459fe"></script>
-  <script src="js/app.js?v=836459fe"></script>
+  <script src="vendor/plotly.min.js?v=dc2dea6d"></script>
+  <script src="js/model.js?v=dc2dea6d"></script>
+  <script src="js/charts.js?v=dc2dea6d"></script>
+  <script src="../shared/js/checkpoints.js?v=dc2dea6d"></script>
+  <script src="js/app.js?v=dc2dea6d"></script>
 </body>
 </html>

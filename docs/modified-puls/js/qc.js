@@ -1,7 +1,7 @@
 // Scenario-driven Modified Puls quality-control training model.
 // Owns training data and evaluation rules only; it performs no DOM manipulation.
 
-import { route, peakStats } from "./routing.js?v=e0420a5e";
+import { route, peakStats } from "./routing.js?v=25dfd3a1";
 
 export const QC_RESULT = Object.freeze({
   ACCEPTABLE: "acceptable",
@@ -124,10 +124,10 @@ export const SUBREACH_REVIEW = Object.freeze({
   selectedSubreachCount: 12,
   resultingSubreachLengthFt: 346,
   acceptable: false,
-  recommendedRange: Object.freeze([4, 6]),
+  recommendedRange: null,
   referenceLabel: "Exercise-specific project review note (not a universal criterion)",
-  referenceText: "Counts outside 4–6 require project-specific routing documentation and calibration support. No supporting justification was included with this submittal.",
-  reviewerExplanation: "Return this configuration for correction or documentation. The exercise-specific review note is not satisfied; this result does not establish a universal subreach rule.",
+  referenceText: "The review package contains no project-specific routing documentation, calibration support, or reviewer justification for the analyst-selected discretization. The scenario review record flags the configuration as unsupported.",
+  reviewerExplanation: "Return this configuration for correction or supporting documentation. The supplied scenario flags it as unsupported; this result does not establish a universal subreach rule.",
 });
 
 export const FINAL_REVIEW = Object.freeze({
@@ -138,7 +138,7 @@ export const FINAL_REVIEW = Object.freeze({
   operatingRangeCfs: Object.freeze([400, 1200]),
   subreachCount: 5,
   resultingSubreachLengthFt: 830,
-  subreachStatement: "Consistent with the supplied exercise-specific project review note.",
+  subreachStatement: "Project-specific routing documentation and reviewer justification are included.",
   issues: Object.freeze(["stale-geometry", "inadequate-resolution"]),
 });
 

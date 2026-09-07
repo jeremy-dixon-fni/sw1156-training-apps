@@ -1,18 +1,18 @@
 // Modified Puls Teaching Companion — app orchestration.
 // Owns state, wires the left rail + tabs + stepper, computes routing, and keeps the URL hash in sync.
 
-import { PRESETS, DEFAULT_PRESET_ID } from "./presets.js?v=e0420a5e";
+import { PRESETS, DEFAULT_PRESET_ID } from "./presets.js?v=25dfd3a1";
 import {
   routeBothCases, peakStats, attenuationAndLag, continuitySummary, firstClampTime,
-} from "./routing.js?v=e0420a5e";
-import { buildSteps } from "./steps.js?v=e0420a5e";
-import { parseHydrograph, parseStorageDischarge, hydrographToCsv, storageDischargeToCsv } from "./csv.js?v=e0420a5e";
+} from "./routing.js?v=25dfd3a1";
+import { buildSteps } from "./steps.js?v=25dfd3a1";
+import { parseHydrograph, parseStorageDischarge, hydrographToCsv, storageDischargeToCsv } from "./csv.js?v=25dfd3a1";
 import {
   drawConcept, drawResultHydro, drawCurve, drawMechCurve, drawGeometryCurveComparison,
   drawGeometryHydroComparison, drawResolutionComparison, drawFinalReviewHydro,
   drawFinalReviewCurve, resize,
-} from "./charts.js?v=e0420a5e";
-import * as QC from "./qc.js?v=e0420a5e";
+} from "./charts.js?v=25dfd3a1";
+import * as QC from "./qc.js?v=25dfd3a1";
 
 const Checkpoints = window.TrainingCheckpoints;
 if (!Checkpoints) throw new Error("The shared checkpoint framework must load before app.js.");
@@ -530,7 +530,7 @@ function initializeCheckpoints() {
               ["Selected subreaches", scenario.selectedSubreachCount],
               ["Approx. subreach length", `${scenario.resultingSubreachLengthFt.toLocaleString()} ft`],
             ])}</section>
-            <section class="qc-scenario-card project-reference"><h3>${scenario.referenceLabel}</h3><p>${scenario.referenceText}</p><p><strong>Supplied review range:</strong> ${scenario.recommendedRange[0]}–${scenario.recommendedRange[1]} subreaches for this exercise.</p></section>
+            <section class="qc-scenario-card project-reference"><h3>${scenario.referenceLabel}</h3><p>${scenario.referenceText}</p>${scenario.recommendedRange ? `<p><strong>Supplied project range:</strong> ${scenario.recommendedRange[0]}–${scenario.recommendedRange[1]} subreaches for this exercise.</p>` : ""}</section>
           </div>
           <fieldset class="qc-decision"><legend>Would you accept this subreach configuration?</legend>
             <label><input type="radio" name="qc-subreach-decision" value="accept"> Accept</label>

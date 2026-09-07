@@ -530,7 +530,7 @@ function initializeCheckpoints() {
               ["Selected subreaches", scenario.selectedSubreachCount],
               ["Approx. subreach length", `${scenario.resultingSubreachLengthFt.toLocaleString()} ft`],
             ])}</section>
-            <section class="qc-scenario-card project-reference"><h3>${scenario.referenceLabel}</h3><p>${scenario.referenceText}</p><p><strong>Supplied review range:</strong> ${scenario.recommendedRange[0]}–${scenario.recommendedRange[1]} subreaches for this exercise.</p></section>
+            <section class="qc-scenario-card project-reference"><h3>${scenario.referenceLabel}</h3><p>${scenario.referenceText}</p>${scenario.recommendedRange ? `<p><strong>Supplied project range:</strong> ${scenario.recommendedRange[0]}–${scenario.recommendedRange[1]} subreaches for this exercise.</p>` : ""}</section>
           </div>
           <fieldset class="qc-decision"><legend>Would you accept this subreach configuration?</legend>
             <label><input type="radio" name="qc-subreach-decision" value="accept"> Accept</label>

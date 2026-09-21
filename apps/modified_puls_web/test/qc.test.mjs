@@ -43,6 +43,23 @@ test("resolution curves use neutral labels and coincide where samples are shared
   }
 });
 
+test("resolution curves differ clearly only within the routed range", () => {
+  const { A, B } = RESOLUTION_REVIEW.curves;
+  const outsideA = A.dischargeCfs
+    .map((discharge, index) => [A.storageAcft[index], discharge])
+    .filter(([, discharge]) => discharge < 400 || discharge > 1200);
+  assert.deepEqual(outsideA, [[0, 0], [38, 235], [175, 1203], [220, 1562]]);
+  assert.deepEqual(B.storageAcft, [0, 12, 25, 38, 50, 60, 175, 200, 225, 250, 280]);
+  assert.deepEqual(B.dischargeCfs, [0, 73, 153, 235, 313, 378, 1203, 1400, 1603, 1813, 2072]);
+
+  const bStorageAt = (discharge) => 60 + (discharge - 378) * (175 - 60) / (1203 - 378);
+  const inRangeSeparation = A.dischargeCfs
+    .map((discharge, index) => ({ discharge, separation: A.storageAcft[index] - bStorageAt(discharge) }))
+    .filter(({ discharge }) => discharge >= 400 && discharge <= 1200)
+    .map(({ separation }) => separation);
+  assert.ok(Math.max(...inRangeSeparation) >= 25);
+});
+
 test("final review requires exactly the documented issues", () => {
   assert.equal(evaluateFinalReview("return", ["stale-geometry", "inadequate-resolution"]).status, QC_RESULT.ACCEPTABLE);
   assert.equal(evaluateFinalReview("approve", []).status, QC_RESULT.INCORRECT);

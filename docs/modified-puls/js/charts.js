@@ -1,7 +1,7 @@
 // Plotly figure builders. Plotly is loaded globally from vendor/plotly.min.js (window.Plotly).
 // Each function calls Plotly.react on a target div id.
 
-import { firstClampTime } from "./routing.js?v=39155455";
+import { firstClampTime } from "./routing.js?v=66efa149";
 
 export const FNI = {
   blue: "#015D91",

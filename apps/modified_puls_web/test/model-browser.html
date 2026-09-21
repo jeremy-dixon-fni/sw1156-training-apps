@@ -33,6 +33,12 @@
     for (const storage of [0, 38, 175]) {
       assert(A.dischargeCfs[A.storageAcft.indexOf(storage)] === B.dischargeCfs[B.storageAcft.indexOf(storage)], `Resolution curves coincide at ${storage} acre-ft`);
     }
+    const bStorageAt = (discharge) => 60 + (discharge - 378) * (175 - 60) / (1203 - 378);
+    const inRangeSeparation = A.dischargeCfs
+      .map((discharge, index) => ({ discharge, separation: A.storageAcft[index] - bStorageAt(discharge) }))
+      .filter(({ discharge }) => discharge >= 400 && discharge <= 1200)
+      .map(({ separation }) => separation);
+    assert(Math.max(...inRangeSeparation) >= 25, "Resolution curves separate clearly within routed range");
     assert(evaluateFinalReview("return", ["stale-geometry", "inadequate-resolution"]).status === QC_RESULT.ACCEPTABLE, "Final QC evaluation");
     const comparison = geometryComparison();
     assert(comparison.oldPeak.peak > 0 && comparison.currentPeak.peak > 0, "Checkpoint routing comparison");

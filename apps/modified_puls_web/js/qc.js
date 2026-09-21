@@ -105,7 +105,7 @@ export const RESOLUTION_REVIEW = Object.freeze({
   curves: Object.freeze({
     A: Object.freeze({
       label: "Curve A (8 points)",
-      storageAcft: Object.freeze([0, 38, 68, 98, 128, 155, 175, 220]),
+      storageAcft: Object.freeze([0, 38, 85, 125, 155, 169, 175, 220]),
       dischargeCfs: Object.freeze([0, 235, 431, 636, 850, 1050, 1203, 1562]),
     }),
     B: Object.freeze({

@@ -172,7 +172,7 @@ export function drawResolutionComparison(div, review) {
   window.Plotly.react(div, traces, lay, CONFIG);
 }
 
-/** Checkpoint 5: the routed hydrograph included in the integrated review package. */
+/** Checkpoint 4: the routed hydrograph included in the integrated review package. */
 export function drawFinalReviewHydro(div, result) {
   const traces = [
     { x: result.timeMin, y: result.inflowCfs, mode: "lines", name: "Inflow", line: { color: FNI.blue, width: 3 } },
@@ -186,7 +186,7 @@ export function drawFinalReviewHydro(div, result) {
   }), CONFIG);
 }
 
-/** Checkpoint 5: assigned curve and the routed operating range. */
+/** Checkpoint 4: assigned curve and the routed operating range. */
 export function drawFinalReviewCurve(div, curve, operatingRangeCfs) {
   const [low, high] = operatingRangeCfs;
   const traces = [{

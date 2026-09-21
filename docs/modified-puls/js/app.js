@@ -1,18 +1,18 @@
 // Modified Puls Teaching Companion — app orchestration.
 // Owns state, wires the left rail + tabs + stepper, computes routing, and keeps the URL hash in sync.
 
-import { PRESETS, DEFAULT_PRESET_ID } from "./presets.js?v=4321ddfc";
+import { PRESETS, DEFAULT_PRESET_ID } from "./presets.js?v=39155455";
 import {
   routeBothCases, peakStats, attenuationAndLag, continuitySummary, firstClampTime,
-} from "./routing.js?v=4321ddfc";
-import { buildSteps } from "./steps.js?v=4321ddfc";
-import { parseHydrograph, parseStorageDischarge, hydrographToCsv, storageDischargeToCsv } from "./csv.js?v=4321ddfc";
+} from "./routing.js?v=39155455";
+import { buildSteps } from "./steps.js?v=39155455";
+import { parseHydrograph, parseStorageDischarge, hydrographToCsv, storageDischargeToCsv } from "./csv.js?v=39155455";
 import {
   drawConcept, drawResultHydro, drawCurve, drawMechCurve, drawGeometryCurveComparison,
   drawGeometryHydroComparison, drawResolutionComparison, drawFinalReviewHydro,
   drawFinalReviewCurve, resize,
-} from "./charts.js?v=4321ddfc";
-import * as QC from "./qc.js?v=4321ddfc";
+} from "./charts.js?v=39155455";
+import * as QC from "./qc.js?v=39155455";
 
 const Checkpoints = window.TrainingCheckpoints;
 if (!Checkpoints) throw new Error("The shared checkpoint framework must load before app.js.");
@@ -517,33 +517,9 @@ function initializeCheckpoints() {
       takeaway: "Point distribution through the operating range matters more than total row count because Modified Puls interpolates between supplied points.",
     },
     {
-      id: "subreach-review",
-      title: "Review the routing discretization",
-      task: "Apply the supplied project-specific review information without treating this training scenario as a universal subreach rule.",
-      render: (body) => {
-        const scenario = QC.SUBREACH_REVIEW;
-        body.className = "checkpoint-body qc-checkpoint-body";
-        body.innerHTML = `
-          <div class="qc-two-col">
-            <section class="qc-scenario-card"><h3>Subreach Configuration</h3>${detailGrid([
-              ["Physical reach length", `${scenario.physicalReachLengthFt.toLocaleString()} ft`],
-              ["Selected subreaches", scenario.selectedSubreachCount],
-              ["Approx. subreach length", `${scenario.resultingSubreachLengthFt.toLocaleString()} ft`],
-            ])}</section>
-            <section class="qc-scenario-card project-reference"><h3>${scenario.referenceLabel}</h3><p>${scenario.referenceText}</p>${scenario.recommendedRange ? `<p><strong>Supplied project range:</strong> ${scenario.recommendedRange[0]}–${scenario.recommendedRange[1]} subreaches for this exercise.</p>` : ""}</section>
-          </div>
-          <fieldset class="qc-decision"><legend>Would you accept this subreach configuration?</legend>
-            <label><input type="radio" name="qc-subreach-decision" value="accept"> Accept</label>
-            <label><input type="radio" name="qc-subreach-decision" value="reject"> Return for correction or supporting documentation</label>
-          </fieldset>`;
-      },
-      evaluate: () => QC.evaluateSubreaches(checkedValue("qc-subreach-decision")),
-      takeaway: "Subreach adequacy must be reviewed against the applicable project method and supporting evidence—not a universal count or length threshold.",
-    },
-    {
       id: "final-review",
       title: "Complete the integrated QC review",
-      task: "Review the package using only the reach, revision, curve-resolution, and discretization checks covered in the preceding checkpoints.",
+      task: "Review the package using only the reach, revision, and curve-resolution checks covered in the preceding checkpoints.",
       render: (body) => {
         const review = QC.FINAL_REVIEW;
         const curve = QC.curveById(review.selectedCurveId);
@@ -561,10 +537,6 @@ function initializeCheckpoints() {
                 ["Curve", review.resolutionCurveId], ["Total supplied points", QC.RESOLUTION_REVIEW.curves.B.storageAcft.length],
                 ["Routed operating range", `${review.operatingRangeCfs[0].toLocaleString()}–${review.operatingRangeCfs[1].toLocaleString()} cfs`],
               ])}</section>
-              <section class="qc-scenario-card"><h4>Routing Discretization</h4>${detailGrid([
-                ["Subreaches", review.subreachCount], ["Approx. subreach length", `${review.resultingSubreachLengthFt.toLocaleString()} ft`],
-                ["Review note", review.subreachStatement],
-              ])}</section>
             </div>
             <div class="qc-plot-grid"><div><h4>Assigned storage-discharge curve</h4><div id="qc-final-curve" class="qc-plot"></div></div><div><h4>Resulting routed hydrograph</h4><div id="qc-final-hydro" class="qc-plot"></div></div></div>
           </section>
@@ -576,7 +548,6 @@ function initializeCheckpoints() {
             <label><input type="checkbox" value="wrong-reach"> Selected curve represents the wrong physical reach</label>
             <label><input type="checkbox" value="stale-geometry"> Curve was generated from obsolete geometry</label>
             <label><input type="checkbox" value="inadequate-resolution"> Curve is inadequately resolved through the routed range</label>
-            <label><input type="checkbox" value="unsupported-subreaches"> Subreach configuration conflicts with the supplied exercise reference</label>
           </fieldset>`;
         drawFinalReviewCurve("qc-final-curve", QC.RESOLUTION_REVIEW.curves.B, review.operatingRangeCfs);
         drawFinalReviewHydro("qc-final-hydro", QC.finalReviewRouting());
@@ -590,7 +561,7 @@ function initializeCheckpoints() {
         checkedValue("qc-final-decision"),
         [...$("qc-final-reasons").querySelectorAll("input:checked")].map((input) => input.value),
       ),
-      takeaway: "A defensible routed hydrograph begins with a defensible reach, current curve, adequate operating-range resolution, and supported discretization.",
+      takeaway: "A defensible routed hydrograph begins with a defensible reach, current geometry, and adequate operating-range resolution.",
     },
   ];
 

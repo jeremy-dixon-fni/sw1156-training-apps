@@ -4,7 +4,7 @@
 <body><h1>Modified Puls browser model checks</h1><div id="result">Running routing parity and QC model checks…</div>
 <script type="module">
   import { routeBothCases, firstClampTime, continuitySummary, attenuationAndLag } from "../js/routing.js";
-  import { QC_RESULT, RESOLUTION_REVIEW, evaluateReachCurve, evaluateGeometryAction, evaluateResolution, evaluateSubreaches, evaluateFinalReview, geometryComparison } from "../js/qc.js";
+  import { QC_RESULT, RESOLUTION_REVIEW, evaluateReachCurve, evaluateGeometryAction, evaluateResolution, evaluateFinalReview, geometryComparison } from "../js/qc.js";
   const output = document.getElementById("result");
   let checks = 0;
   const assert = (condition, message) => { checks += 1; if (!condition) throw new Error(message); };
@@ -33,7 +33,6 @@
     for (const storage of [0, 38, 175]) {
       assert(A.dischargeCfs[A.storageAcft.indexOf(storage)] === B.dischargeCfs[B.storageAcft.indexOf(storage)], `Resolution curves coincide at ${storage} acre-ft`);
     }
-    assert(evaluateSubreaches("reject").status === QC_RESULT.ACCEPTABLE, "Subreach QC evaluation");
     assert(evaluateFinalReview("return", ["stale-geometry", "inadequate-resolution"]).status === QC_RESULT.ACCEPTABLE, "Final QC evaluation");
     const comparison = geometryComparison();
     assert(comparison.oldPeak.peak > 0 && comparison.currentPeak.peak > 0, "Checkpoint routing comparison");

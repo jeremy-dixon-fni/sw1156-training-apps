@@ -116,29 +116,12 @@ export const RESOLUTION_REVIEW = Object.freeze({
   }),
 });
 
-// TODO: Replace this exercise-specific placeholder with the finalized project QC
-// criterion. The UI intentionally consumes only these scenario fields and must not
-// encode a universal Modified Puls subreach-count or subreach-length rule.
-export const SUBREACH_REVIEW = Object.freeze({
-  physicalReachLengthFt: 4150,
-  selectedSubreachCount: 12,
-  resultingSubreachLengthFt: 346,
-  acceptable: false,
-  recommendedRange: null,
-  referenceLabel: "Exercise-specific project review note (not a universal criterion)",
-  referenceText: "The review package contains no project-specific routing documentation, calibration support, or reviewer justification for the analyst-selected discretization. The scenario review record flags the configuration as unsupported.",
-  reviewerExplanation: "Return this configuration for correction or supporting documentation. The supplied scenario flags it as unsupported; this result does not establish a universal subreach rule.",
-});
-
 export const FINAL_REVIEW = Object.freeze({
   selectedCurveId: "MP03_PROP_2",
   curveGeometryRevision: 2,
   currentGeometryRevision: 4,
   resolutionCurveId: "B",
   operatingRangeCfs: Object.freeze([400, 1200]),
-  subreachCount: 5,
-  resultingSubreachLengthFt: 830,
-  subreachStatement: "Project-specific routing documentation and reviewer justification are included.",
   issues: Object.freeze(["stale-geometry", "inadequate-resolution"]),
 });
 
@@ -182,15 +165,6 @@ export function evaluateResolution(decision, concern, preferredCurve) {
   return { status: QC_RESULT.ACCEPTABLE, message: "Correct. Modified Puls interpolates between supplied points. Curve A is preferable because it resolves the operating range, even though it has fewer total rows." };
 }
 
-export function evaluateSubreaches(decision) {
-  if (!decision) return { status: QC_RESULT.INVALID, message: "Decide whether to accept the configured number of subreaches." };
-  const traineeAccepts = decision === "accept";
-  if (traineeAccepts === SUBREACH_REVIEW.acceptable) {
-    return { status: QC_RESULT.ACCEPTABLE, message: SUBREACH_REVIEW.reviewerExplanation };
-  }
-  return { status: QC_RESULT.INCORRECT, message: `Use the supplied project reference for this scenario. ${SUBREACH_REVIEW.reviewerExplanation}` };
-}
-
 export function evaluateFinalReview(decision, selectedReasons) {
   if (!decision) return { status: QC_RESULT.INVALID, message: "Choose whether to approve or return the review package." };
   if (decision === "approve") return { status: QC_RESULT.INCORRECT, message: "The package contains issues already covered in the geometry-revision and curve-resolution checkpoints. Review those fields before approving." };
@@ -198,9 +172,9 @@ export function evaluateFinalReview(decision, selectedReasons) {
   if (!selected.size) return { status: QC_RESULT.INVALID, message: "Identify the reasons for returning the package." };
   const missing = FINAL_REVIEW.issues.filter((issue) => !selected.has(issue));
   const extra = [...selected].filter((issue) => !FINAL_REVIEW.issues.includes(issue));
-  if (extra.length) return { status: QC_RESULT.INCORRECT, message: "One selected reason is not supported by the package. Limit the review to documented reach, geometry, resolution, and discretization evidence." };
+  if (extra.length) return { status: QC_RESULT.INCORRECT, message: "One selected reason is not supported by the package. Limit the review to documented reach, geometry, and curve-resolution evidence." };
   if (missing.length) return { status: QC_RESULT.CLOSE, message: "You identified a valid issue, but another previously taught QC problem remains in the package." };
-  return { status: QC_RESULT.ACCEPTABLE, message: "Correct. Return the package because the curve is stale and inadequately resolved through the routed range. The physical reach and exercise-specific subreach configuration are supported." };
+  return { status: QC_RESULT.ACCEPTABLE, message: "Correct. Return the package because the curve is stale and inadequately resolved through the routed range. The physical reach is supported by the supplied metadata." };
 }
 
 export function geometryComparison() {

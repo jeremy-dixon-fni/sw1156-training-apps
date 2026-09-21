@@ -4,11 +4,9 @@ import assert from "node:assert/strict";
 import {
   QC_RESULT,
   RESOLUTION_REVIEW,
-  SUBREACH_REVIEW,
   evaluateReachCurve,
   evaluateGeometryAction,
   evaluateResolution,
-  evaluateSubreaches,
   evaluateFinalReview,
   geometryComparison,
   finalReviewRouting,
@@ -43,12 +41,6 @@ test("resolution curves use neutral labels and coincide where samples are shared
   for (const point of shared) {
     assert.equal(B.dischargeCfs[B.storageAcft.indexOf(point.storage)], point.discharge);
   }
-});
-
-test("subreach result comes from scenario configuration", () => {
-  const expectedDecision = SUBREACH_REVIEW.acceptable ? "accept" : "reject";
-  assert.equal(evaluateSubreaches(expectedDecision).status, QC_RESULT.ACCEPTABLE);
-  assert.match(SUBREACH_REVIEW.referenceLabel, /not a universal criterion/i);
 });
 
 test("final review requires exactly the documented issues", () => {

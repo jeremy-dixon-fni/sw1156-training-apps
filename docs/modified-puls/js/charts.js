@@ -1,7 +1,7 @@
 // Plotly figure builders. Plotly is loaded globally from vendor/plotly.min.js (window.Plotly).
 // Each function calls Plotly.react on a target div id.
 
-import { firstClampTime } from "./routing.js?v=4321ddfc";
+import { firstClampTime } from "./routing.js?v=39155455";
 
 export const FNI = {
   blue: "#015D91",
@@ -172,7 +172,7 @@ export function drawResolutionComparison(div, review) {
   window.Plotly.react(div, traces, lay, CONFIG);
 }
 
-/** Checkpoint 5: the routed hydrograph included in the integrated review package. */
+/** Checkpoint 4: the routed hydrograph included in the integrated review package. */
 export function drawFinalReviewHydro(div, result) {
   const traces = [
     { x: result.timeMin, y: result.inflowCfs, mode: "lines", name: "Inflow", line: { color: FNI.blue, width: 3 } },
@@ -186,7 +186,7 @@ export function drawFinalReviewHydro(div, result) {
   }), CONFIG);
 }
 
-/** Checkpoint 5: assigned curve and the routed operating range. */
+/** Checkpoint 4: assigned curve and the routed operating range. */
 export function drawFinalReviewCurve(div, curve, operatingRangeCfs) {
   const [low, high] = operatingRangeCfs;
   const traces = [{

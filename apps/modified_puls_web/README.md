@@ -1,8 +1,8 @@
 # Modified Puls Routing — Teaching Companion (static web app)
 
 A static, client-side version of the Modified Puls routing tool, built to run entirely in the browser
-and deploy to **GitHub Pages**. Trainees first complete five model-review checkpoints covering reach
-identity, geometry currency, curve resolution, configurable subreach review, and an integrated final
+and deploy to **GitHub Pages**. Trainees first complete four model-review checkpoints covering reach
+identity, geometry currency, curve resolution, and an integrated final
 QC package. Completion unlocks the existing **Concept → Mechanics → Result** explorer.
 
 This is the web companion to the Python/Dash app in `../modified_puls/`. That Dash app remains the
@@ -34,7 +34,7 @@ node --test test/qc.test.mjs
 Browser regression pages are also available while serving the repository root:
 
 - `apps/modified_puls_web/test/model-browser.html` checks the golden routing results and QC model.
-- `apps/modified_puls_web/test/checkpoint-flow.html` completes all five checkpoints, exercises the
+- `apps/modified_puls_web/test/checkpoint-flow.html` completes all four checkpoints, exercises the
   unlocked sandbox, and verifies Reset Training.
 
 ## Regenerate embedded presets

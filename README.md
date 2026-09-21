@@ -18,7 +18,7 @@ The apps are intentionally lightweight Dash prototypes. Each app teaches one con
 
 `apps/modified_puls_web/` is a static, client-side version of the Modified Puls tool built to run
 entirely in the browser and deploy to **GitHub Pages** — no Python server. It teaches setup review through
-five QC checkpoints before unlocking the guided **concept → mechanics → result** walkthrough. It shares the Python core's math: `apps/modified_puls/app.py`
+four QC checkpoints before unlocking the guided **concept → mechanics → result** walkthrough. It shares the Python core's math: `apps/modified_puls/app.py`
 is the reference implementation, and a Node parity test asserts the JS output against golden values
 exported from it.
 

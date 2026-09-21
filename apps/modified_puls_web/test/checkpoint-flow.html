@@ -40,7 +40,7 @@
       try {
         await wait(1200);
         const doc = frame.contentDocument;
-        assert(doc.getElementById("checkpoint-number").textContent.includes("1 of 5"), "App did not open at Checkpoint 1");
+        assert(doc.getElementById("checkpoint-number").textContent.includes("1 of 4"), "App did not open at Checkpoint 1");
         assert(doc.getElementById("sandbox-shell").classList.contains("is-checkpoint-locked"), "Sandbox was not initially locked");
 
         const curve = doc.getElementById("qc-curve-select");
@@ -48,23 +48,19 @@
         curve.dispatchEvent(new Event("change", { bubbles: true }));
         choose(doc, "qc-reach-decision", "accept");
         passCurrent(doc);
-        next(doc, "2 of 5");
+        next(doc, "2 of 4");
 
         choose(doc, "qc-geometry-action", "regenerate");
         passCurrent(doc);
         assert(!doc.getElementById("qc-geometry-reveal").hidden, "Geometry comparison was not revealed");
-        next(doc, "3 of 5");
+        next(doc, "3 of 4");
 
         assert(frame.contentWindow.getComputedStyle(doc.getElementById("qc-resolution-followup")).display === "none", "Resolution follow-up was revealed before Reject was selected");
         choose(doc, "qc-resolution-decision", "reject");
         doc.getElementById("qc-resolution-concern").value = "operating-range-resolution";
         choose(doc, "qc-preferred-curve", "A");
         passCurrent(doc);
-        next(doc, "4 of 5");
-
-        choose(doc, "qc-subreach-decision", "reject");
-        passCurrent(doc);
-        next(doc, "5 of 5");
+        next(doc, "4 of 4");
 
         assert(frame.contentWindow.getComputedStyle(doc.getElementById("qc-final-reasons")).display === "none", "Final return reasons were revealed before Return was selected");
         choose(doc, "qc-final-decision", "return");
@@ -85,11 +81,11 @@
         assert(doc.getElementById("result-table").querySelectorAll("tbody tr").length === 5, "Routing result summary did not render");
 
         doc.getElementById("checkpoint-reset").click();
-        assert(doc.getElementById("checkpoint-number").textContent.includes("1 of 5"), "Reset did not return to Checkpoint 1");
+        assert(doc.getElementById("checkpoint-number").textContent.includes("1 of 4"), "Reset did not return to Checkpoint 1");
         assert(doc.getElementById("sandbox-shell").classList.contains("is-checkpoint-locked"), "Reset did not lock the sandbox");
 
         result.className = "pass";
-        result.textContent = "PASS: all five checkpoints, final unlock, sandbox controls, and Reset Training completed successfully.";
+        result.textContent = "PASS: all four checkpoints, final unlock, sandbox controls, and Reset Training completed successfully.";
       } catch (error) {
         result.className = "fail";
         result.textContent = `FAIL: ${error.stack || error.message}`;

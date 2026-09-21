@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   QC_RESULT,
+  RESOLUTION_REVIEW,
   SUBREACH_REVIEW,
   evaluateReachCurve,
   evaluateGeometryAction,
@@ -28,6 +29,20 @@ test("resolution review evaluates point distribution, not total count", () => {
   assert.equal(evaluateResolution("reject", "operating-range-resolution", "A").status, QC_RESULT.ACCEPTABLE);
   assert.equal(evaluateResolution("reject", "operating-range-resolution", "B").status, QC_RESULT.INCORRECT);
   assert.equal(evaluateResolution("accept", "", "").status, QC_RESULT.INCORRECT);
+});
+
+test("resolution curves use neutral labels and coincide where samples are shared", () => {
+  const { A, B } = RESOLUTION_REVIEW.curves;
+  assert.equal(A.label, "Curve A (8 points)");
+  assert.equal(B.label, "Curve B (11 points)");
+
+  const shared = A.storageAcft
+    .map((storage, index) => ({ storage, discharge: A.dischargeCfs[index] }))
+    .filter(({ storage }) => B.storageAcft.includes(storage));
+  assert.deepEqual(shared.map(({ storage }) => storage), [0, 38, 175]);
+  for (const point of shared) {
+    assert.equal(B.dischargeCfs[B.storageAcft.indexOf(point.storage)], point.discharge);
+  }
 });
 
 test("subreach result comes from scenario configuration", () => {

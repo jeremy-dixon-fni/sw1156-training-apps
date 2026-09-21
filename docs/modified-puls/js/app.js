@@ -1,18 +1,18 @@
 // Modified Puls Teaching Companion — app orchestration.
 // Owns state, wires the left rail + tabs + stepper, computes routing, and keeps the URL hash in sync.
 
-import { PRESETS, DEFAULT_PRESET_ID } from "./presets.js?v=25dfd3a1";
+import { PRESETS, DEFAULT_PRESET_ID } from "./presets.js?v=4321ddfc";
 import {
   routeBothCases, peakStats, attenuationAndLag, continuitySummary, firstClampTime,
-} from "./routing.js?v=25dfd3a1";
-import { buildSteps } from "./steps.js?v=25dfd3a1";
-import { parseHydrograph, parseStorageDischarge, hydrographToCsv, storageDischargeToCsv } from "./csv.js?v=25dfd3a1";
+} from "./routing.js?v=4321ddfc";
+import { buildSteps } from "./steps.js?v=4321ddfc";
+import { parseHydrograph, parseStorageDischarge, hydrographToCsv, storageDischargeToCsv } from "./csv.js?v=4321ddfc";
 import {
   drawConcept, drawResultHydro, drawCurve, drawMechCurve, drawGeometryCurveComparison,
   drawGeometryHydroComparison, drawResolutionComparison, drawFinalReviewHydro,
   drawFinalReviewCurve, resize,
-} from "./charts.js?v=25dfd3a1";
-import * as QC from "./qc.js?v=25dfd3a1";
+} from "./charts.js?v=4321ddfc";
+import * as QC from "./qc.js?v=4321ddfc";
 
 const Checkpoints = window.TrainingCheckpoints;
 if (!Checkpoints) throw new Error("The shared checkpoint framework must load before app.js.");

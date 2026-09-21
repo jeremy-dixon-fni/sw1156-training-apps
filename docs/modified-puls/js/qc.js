@@ -1,7 +1,7 @@
 // Scenario-driven Modified Puls quality-control training model.
 // Owns training data and evaluation rules only; it performs no DOM manipulation.
 
-import { route, peakStats } from "./routing.js?v=25dfd3a1";
+import { route, peakStats } from "./routing.js?v=4321ddfc";
 
 export const QC_RESULT = Object.freeze({
   ACCEPTABLE: "acceptable",
@@ -104,14 +104,14 @@ export const RESOLUTION_REVIEW = Object.freeze({
   reviewedCurveId: "B",
   curves: Object.freeze({
     A: Object.freeze({
-      label: "Curve A — 8 well-distributed points",
-      storageAcft: Object.freeze([0, 18, 38, 65, 97, 135, 170, 225]),
-      dischargeCfs: Object.freeze([0, 250, 450, 650, 850, 1050, 1200, 1500]),
+      label: "Curve A (8 points)",
+      storageAcft: Object.freeze([0, 38, 68, 98, 128, 155, 175, 220]),
+      dischargeCfs: Object.freeze([0, 235, 431, 636, 850, 1050, 1203, 1562]),
     }),
     B: Object.freeze({
-      label: "Curve B — 11 poorly distributed points",
-      storageAcft: Object.freeze([0, 6, 13, 21, 30, 38, 178, 201, 225, 250, 278]),
-      dischargeCfs: Object.freeze([0, 80, 160, 240, 320, 380, 1250, 1450, 1650, 1850, 2050]),
+      label: "Curve B (11 points)",
+      storageAcft: Object.freeze([0, 12, 25, 38, 50, 60, 175, 200, 225, 250, 280]),
+      dischargeCfs: Object.freeze([0, 73, 153, 235, 313, 378, 1203, 1400, 1603, 1813, 2072]),
     }),
   }),
 });

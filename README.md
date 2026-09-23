@@ -13,6 +13,7 @@ The apps are intentionally lightweight Dash prototypes. Each app teaches one con
 | TC and Lag Assumption Explorer | Shows how lag assumptions affect runoff hydrograph shape and timing. | `python apps/tc_lag/app.py` |
 | Routing Reach Representation Trainer | Shows sensitivity of Muskingum-Cunge-style routing to representative reach geometry. | `python apps/muskingum_cunge/app.py` |
 | Modified Puls Teaching Companion (web) | Static, browser-only QC checkpoint sequence that unlocks the concept → mechanics → result routing explorer. | `python -m http.server 8060` from repo root |
+| Channel Investment & Annualized Loss Explorer (web) | Relates channel excavation and structure-ground assumptions to event damages, annualized benefits, and conceptual project cost. | `python -m http.server 8060` from repo root |
 
 ## Web teaching companion (GitHub Pages)
 
@@ -55,6 +56,7 @@ python -m http.server 8000 -d apps
 # http://localhost:8000/precipitation_web/
 # http://localhost:8000/losses_web/
 # http://localhost:8000/transform_web/
+# http://localhost:8000/annualized_losses_prototype/
 ```
 
 The Precipitation module carries its verified 2-year, 24-hour depth forward to Transform within the same browser tab/session. Use **Reset Exercise** within each app to clear that module's checkpoint progress.

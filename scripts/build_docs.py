@@ -12,6 +12,7 @@ Output:
     docs/losses/
     docs/transform/
     docs/modified-puls/
+    docs/annualized-losses/
 """
 
 from __future__ import annotations
@@ -64,6 +65,12 @@ APPS = [
         title="4. Modified Puls",
         source=ROOT / "apps" / "modified_puls_web",
         description="Route the inflow hydrograph through storage-discharge behavior.",
+    ),
+    WebApp(
+        slug="annualized-losses",
+        title="5. Annualized Losses",
+        source=ROOT / "apps" / "annualized_losses_prototype",
+        description="Explore how channel excavation, structure-ground slope, and event damages shape project costs and annualized benefits.",
     ),
 ]
 
@@ -345,6 +352,7 @@ def write_landing_page(published_apps: list[WebApp]) -> None:
 </html>
 """
 
+    page = "\n".join(line.rstrip() for line in page.splitlines()) + "\n"
     (DOCS / "index.html").write_text(page, encoding="utf-8")
 
 

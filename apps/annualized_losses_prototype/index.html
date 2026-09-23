@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Channel Investment & Annualized Loss Explorer</title>
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <div class="eyebrow">Stormwater Training Tools · Prototype</div>
+        <h1>Channel Investment & Annualized Loss Explorer</h1>
+        <p class="lede">Build a conveyance alternative, see what it costs, and watch how the same project changes damages across the full storm-frequency range. The goal is to make the <em>shape</em> of the cost-benefit curve visible—not to produce a design recommendation.</p>
+      </div>
+    </header>
+
+    <section class="workflow" aria-label="Teaching sequence">
+      <div class="step active"><span>1</span><strong>Build an alternative</strong><small>Change section geometry</small></div>
+      <div class="step"><span>2</span><strong>Check what you bought</strong><small>Capacity + excavation</small></div>
+      <div class="step"><span>3</span><strong>See what changed</strong><small>Damages across all events</small></div>
+      <div class="step"><span>4</span><strong>Save the point</strong><small>Fill the cost-benefit curve</small></div>
+    </section>
+
+    <div class="layout">
+      <aside class="card controls">
+        <h2>Alternative geometry</h2>
+        <p class="muted">Only these geometry controls and structure-ground presets are exposed in the teaching version. Flows, roughness, project length, and damage assumptions are fixed.</p>
+
+        <label>Remaining channel depth <output id="depthOut"></output></label>
+        <input id="channelDepth" type="range" min="0.25" max="4.25" step="0.25" value="4.25" />
+        <p class="control-note">Measured from the fixed channel invert up to the excavated floodplain bench.</p>
+
+        <label>Floodplain width per side <output id="widthOut"></output></label>
+        <input id="floodplainWidth" type="range" min="40" max="95" step="5" value="95" />
+
+        <label>Floodplain bench slope <output id="slopeOut">1.00%</output></label>
+        <p class="control-note">Fixed at 1.00% outward with a 3H:1V cut side slope.</p>
+
+        <div class="preset-label">Structure ground slope</div>
+        <p class="control-note">Projects the structure rows outward from the floodplain tie-ins.</p>
+        <div class="preset-row three" role="group" aria-label="Structure ground slope preset">
+          <button class="secondary" data-structure-slope="0.5" aria-pressed="false">0.5%</button>
+          <button class="secondary active" data-structure-slope="1" aria-pressed="true">1% default</button>
+          <button class="secondary" data-structure-slope="2" aria-pressed="false">2%</button>
+        </div>
+
+        <div class="preset-row">
+          <button class="secondary" data-preset="tiny">Try a tiny change</button>
+          <button class="secondary" data-preset="hundred">Try ~100-yr</button>
+        </div>
+        <button id="saveScenario" class="primary">Save this alternative</button>
+        <button id="resetScenarios" class="ghost">Clear saved alternatives</button>
+
+        <details open>
+          <summary>Fixed teaching assumptions</summary>
+          <ul>
+            <li>2-, 5-, 10-, 25-, 50-, and 100-year synthetic flows</li>
+            <li>Fixed existing channel invert and 20-ft bottom; 1% benches with 3H:1V channel and cut side slopes</li>
+            <li>Structure-ground presets project outward from the tie-ins at 0.5%, 1%, or 2%</li>
+            <li>Manning n = 0.040 channel / 0.085 overbank; bed slope = 0.0015 ft/ft</li>
+            <li>2,500-ft nominal project length; $40/cy excavation + 20% indirects</li>
+            <li>Structures valued at $500,000; depth-damage capped at 50%</li>
+            <li>50-year analysis period, 3% discount rate</li>
+          </ul>
+        </details>
+      </aside>
+
+      <section class="content">
+        <div class="metrics">
+          <article class="metric"><span>Excavation</span><strong id="excavationMetric">—</strong><small>cut only, nominal project</small></article>
+          <article class="metric"><span>Conceptual cost</span><strong id="costMetric">—</strong><small>earthwork proxy</small></article>
+          <article class="metric"><span>Approx. capacity</span><strong id="capacityMetric">—</strong><small>largest event contained in section</small></article>
+          <article class="metric"><span>NPV benefit</span><strong id="benefitMetric">—</strong><small>avoided expected damages</small></article>
+          <article class="metric"><span>Benefit / cost</span><strong id="bcrMetric">—</strong><small>illustrative, not a decision rule</small></article>
+        </div>
+
+        <div class="grid two">
+          <article class="card chart-card">
+            <div class="card-head"><div><h2>Typical section</h2><p>Water surfaces update for all six events and stop where they intersect the alternative or existing ground. Excavation is the area between the fixed existing section and your alternative.</p></div><select id="waterEvent"><option value="100">100-yr WSE</option><option value="50">50-yr WSE</option><option value="25">25-yr WSE</option><option value="10">10-yr WSE</option><option value="5">5-yr WSE</option><option value="2">2-yr WSE</option></select></div>
+            <svg id="sectionChart" viewBox="0 0 760 390" role="img" aria-label="Channel typical section"></svg>
+          </article>
+
+          <article class="card chart-card">
+            <div class="card-head"><div><h2>Losses by frequency</h2><p>Each bar is the direct modeled damage for the same event shown in the typical section and event table.</p></div></div>
+            <svg id="lossChart" viewBox="0 0 760 390" role="img" aria-label="Direct losses by design event"></svg>
+          </article>
+        </div>
+
+        <div class="grid two">
+          <article class="card chart-card">
+            <div class="card-head"><div><h2>Cost vs. cumulative NPV benefit</h2><p>Save several alternatives—from obviously too small to obviously too large—to let the curve reveal where additional spending stops buying much additional benefit.</p></div></div>
+            <svg id="benefitChart" viewBox="0 0 760 390" role="img" aria-label="Cost versus benefit curve"></svg>
+          </article>
+
+          <article class="card">
+            <h2>Event-by-event effect</h2>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Event</th><th>Flow</th><th>Existing damage</th><th>Alternative damage</th><th>Avoided</th></tr></thead>
+                <tbody id="eventTable"></tbody>
+              </table>
+            </div>
+            <div id="interpretation" class="callout"></div>
+          </article>
+        </div>
+      </section>
+    </div>
+  </main>
+  <script src="js/model.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

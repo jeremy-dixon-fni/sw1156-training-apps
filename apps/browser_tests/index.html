@@ -19,7 +19,7 @@
   <h1>Training Apps Browser Checks</h1>
   <div id="result">Running checks…</div>
   <script>
-    (function () {
+    (async function () {
       "use strict";
       const output = document.getElementById("result");
       let count = 0;
@@ -39,21 +39,39 @@
         const P = window.PrecipModel;
         const depthAtlas = P.parseAtlas14CsvText(P.SAMPLE_ATLAS14_CSV);
         close(P.getDepth(depthAtlas, 2, 1440), 3.95, 1e-12, "2-year depth parse failed");
+        const annualPeriods = depthAtlas.returnPeriods.filter(ari => ari >= 2);
         const rows = [...new Set(depthAtlas.depthTable.map(row => row.durationMin))].map(duration => {
           const label = depthAtlas.depthTable.find(row => row.durationMin === duration).duration;
-          const values = depthAtlas.returnPeriods.map(ari => P.intensityFromDepth(P.getDepth(depthAtlas, ari, duration), duration));
+          const values = annualPeriods.map(ari => P.intensityFromDepth(P.getDepth(depthAtlas, ari, duration), duration));
           return `${label}:,${values.map(value => value.toFixed(9)).join(",")}`;
         });
         const intensityAtlas = P.parseAtlas14CsvText([
           "Point precipitation frequency estimates (inches/hour)",
           "Data type: Precipitation intensity",
           "Time series type: Annual maximum",
-          `by duration for ARI (years):,${depthAtlas.returnPeriods.join(",")}`,
+          `by duration for AEP:,${annualPeriods.map(ari => `'1/${ari}`).join(",")}`,
           ...rows
         ].join("\n"));
         assert(intensityAtlas.sourceQuantity === "intensity", "Intensity format was not recognized");
         assert(intensityAtlas.seriesType === "annual maximum", "Annual-maximum series was not recognized");
+        assert(JSON.stringify(intensityAtlas.returnPeriods) === JSON.stringify(annualPeriods), "AEP fractions were not converted to return periods");
         close(P.getDepth(intensityAtlas, 100, 180), 5.42, 1e-7, "Intensity-to-depth conversion failed");
+
+        const readFixture = async (filename) => {
+          const response = await fetch(`../precipitation_web/data/a14_format/${filename}`);
+          if (!response.ok) throw new Error(`Could not load ${filename}: HTTP ${response.status}`);
+          return response.text();
+        };
+        const [partialText, annualText] = await Promise.all([
+          readFixture("PF_Depth_English_PDS.csv"),
+          readFixture("PF_Depth_English_AMS.csv")
+        ]);
+        const partialFixture = P.parseAtlas14CsvText(partialText);
+        const annualFixture = P.parseAtlas14CsvText(annualText);
+        assert(partialFixture.seriesType === "partial duration", "Real PDS export was not recognized");
+        assert(annualFixture.seriesType === "annual maximum", "Real AMS export was not recognized");
+        close(P.getDepth(partialFixture, 100, 1440), 9.72, 1e-12, "Real PDS 100-year depth parse failed");
+        close(P.getDepth(annualFixture, 100, 1440), 9.27, 1e-12, "Real AMS 100-year depth parse failed");
 
         const L = window.LossesModel;
         const baseline = L.summarizeResult(L.computeInitialConstantLosses(1, 0.2, 30));

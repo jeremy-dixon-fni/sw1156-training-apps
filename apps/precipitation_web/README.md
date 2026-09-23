@@ -36,7 +36,7 @@ python -m http.server 8000 -d apps
 
 Then open `http://localhost:8000/precipitation_web/`.
 
-The four core checkpoints require an uploaded Atlas 14 frequency CSV. Both depth and intensity exports are accepted, as are partial-duration and annual-maximum series; the model normalizes values to depth internally. The built-in sample is retained for the unlocked temporal-distribution sandbox.
+The four core checkpoints require an uploaded Atlas 14 frequency CSV. Both depth and intensity exports are accepted, as are partial-duration exports with an `ARI (years)` header and annual-maximum exports with an `AEP` fraction header. AEP fractions such as `'1/100` are normalized to the corresponding 100-year return period, and intensity values are normalized to depth internally. The built-in sample is retained for the unlocked temporal-distribution sandbox. Representative NOAA exports for both formats are retained in `data/a14_format/` as parser fixtures.
 
 ## Add temporal distributions
 

@@ -465,6 +465,25 @@ fraction_time,fraction_cumulative_depth
     return Number(depthIn) / (Number(durationMin) / 60);
   }
 
+  function returnPeriodFromAep(value) {
+    const text = cleanCell(value).replace(/^['’]+/, "").replace(/\s+/g, "");
+    const fraction = text.match(/^([0-9]*\.?[0-9]+)\/([0-9]*\.?[0-9]+)$/);
+    let aep;
+    if (fraction) {
+      aep = Number(fraction[1]) / Number(fraction[2]);
+    } else if (text.endsWith("%")) {
+      aep = Number(text.slice(0, -1)) / 100;
+    } else {
+      aep = Number(text);
+    }
+    if (!Number.isFinite(aep) || aep <= 0 || aep > 1) {
+      throw new Error(`Could not parse Atlas 14 AEP value '${value}'.`);
+    }
+    const returnPeriod = 1 / aep;
+    const rounded = Math.round(returnPeriod);
+    return Math.abs(returnPeriod - rounded) <= 1e-9 ? rounded : returnPeriod;
+  }
+
   function parseAtlas14CsvText(text) {
     const rows = parseCsvRows(text);
     const metadata = {};
@@ -474,7 +493,7 @@ fraction_time,fraction_cumulative_depth
         return;
       }
       const first = cleanCell(row[0]);
-      if (!first.includes(":") || first.toLowerCase().startsWith("by duration for ari")) {
+      if (!first.includes(":") || /^by duration for (ari|aep)/.test(first.toLowerCase())) {
         return;
       }
       const colon = first.indexOf(":");
@@ -491,18 +510,23 @@ fraction_time,fraction_cumulative_depth
       }
     });
 
-    const headerIndex = rows.findIndex((row) => row.length && cleanCell(row[0]).toLowerCase().startsWith("by duration for ari"));
+    const headerIndex = rows.findIndex((row) => {
+      const label = row.length ? cleanCell(row[0]).toLowerCase() : "";
+      return label.startsWith("by duration for ari") || label.startsWith("by duration for aep");
+    });
     if (headerIndex < 0) {
-      throw new Error("Could not find the Atlas 14 ARI header row: 'by duration for ARI (years):'.");
+      throw new Error("Could not find an Atlas 14 frequency header row using ARI years or AEP values.");
     }
 
+    const headerLabel = cleanCell(rows[headerIndex][0]).toLowerCase();
+    const usesAep = headerLabel.startsWith("by duration for aep");
     const returnPeriods = rows[headerIndex]
       .slice(1)
       .map(cleanCell)
       .filter(Boolean)
-      .map(Number);
+      .map((value) => usesAep ? returnPeriodFromAep(value) : Number(value));
     if (!returnPeriods.length || returnPeriods.some((value) => !Number.isFinite(value))) {
-      throw new Error("Could not parse Atlas 14 ARI values from the header row.");
+      throw new Error(`Could not parse Atlas 14 ${usesAep ? "AEP" : "ARI"} values from the header row.`);
     }
 
     const dataTypeText = String(metadata["Data type"] || rows[0]?.[0] || "").toLowerCase();
@@ -543,7 +567,7 @@ fraction_time,fraction_cumulative_depth
 
       const values = row.slice(1).map(cleanCell);
       if (values.length < returnPeriods.length) {
-        throw new Error(`Duration row '${durationLabel}' has fewer depth values than the ARI header.`);
+        throw new Error(`Duration row '${durationLabel}' has fewer precipitation values than the frequency header.`);
       }
 
       durationLabels.push(durationLabel);
